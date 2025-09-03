@@ -5,12 +5,12 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "members")
 public class Member {
-
+    //primary Key??
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false, unique = true) // ✅ fix mapping
+    @Column(name = "user_id", nullable = false, unique = true)
     private String userId;
 
     @Column(nullable = false, unique = true)
