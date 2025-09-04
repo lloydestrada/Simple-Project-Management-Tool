@@ -8,13 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/test01")
+@CrossOrigin(origins = "http://localhost:3000")
 public class MemberController {
 
     @Autowired
@@ -49,11 +49,16 @@ public class MemberController {
     public ResponseEntity<Object> getAllMembers() {
         List<Member> members = memberService.getAllMembers();
 
-        List<Object> memberData = Collections.singletonList(members.stream().map(m -> Map.of(
-                "user_id", m.getUserId(),
-                "email", m.getEmail(),
-                "password", m.getPassword()
-        )).toList());
+        // Use Collectors.toList() instead of toList()
+        List<Map<String, Object>> memberData = members.stream().map(m -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", m.getId());
+            map.put("user_id", m.getUserId());
+            map.put("username", m.getUsername());
+            map.put("email", m.getEmail());
+            map.put("password", m.getPassword());
+            return map;
+        }).collect(Collectors.toList());
 
         Map<String, Object> response = Map.of("data", memberData);
         return ResponseEntity.ok(response);
@@ -69,6 +74,7 @@ public class MemberController {
 
             Map<String, Object> memberData = Map.of(
                     "user_id", m.getUserId(),
+                    "username", m.getUsername(),
                     "email", m.getEmail(),
                     "password", m.getPassword()
             );
@@ -76,13 +82,14 @@ public class MemberController {
             Map<String, Object> response = Map.of("data", memberData);
             return ResponseEntity.ok(response);
         } else {
-            // Return empty data object if not found
             Map<String, Object> response = Map.of("data", Map.of());
             return ResponseEntity.ok(response);
         }
     }
 
 
+
+    // Update Member
     // Update Member
     @PatchMapping("/update_member")
     public ResponseEntity<Object> updateMember(
@@ -101,6 +108,7 @@ public class MemberController {
         String newPassword = requestBody.get("new_password");
         String email = requestBody.get("email");
         String userId = requestBody.get("user_id");
+        String username = requestBody.get("username"); // NEW
 
         // Verify old password
         if (!member.getPassword().equals(oldPassword)) {
@@ -110,6 +118,7 @@ public class MemberController {
 
         // Update fields
         member.setUserId(userId);
+        member.setUsername(username);  // NEW
         member.setEmail(email);
         member.setPassword(newPassword);
 
@@ -118,11 +127,24 @@ public class MemberController {
         Map<String, Object> response = Map.of(
                 "data", Map.of(
                         "user_id", updatedMember.getUserId(),
+                        "username", updatedMember.getUsername(),
                         "email", updatedMember.getEmail(),
                         "password", updatedMember.getPassword()
                 )
         );
 
         return ResponseEntity.ok(response);
+    }
+
+
+    // Delete Member
+    @DeleteMapping("/delete_member")
+    public ResponseEntity<Object> deleteMember(@RequestParam Long id) {
+        boolean deleted = memberService.deleteMember(id);
+        if (deleted) {
+            return ResponseEntity.ok(Map.of("message", "Member deleted successfully"));
+        } else {
+            return ResponseEntity.status(404).body(Map.of("error", "Member not found"));
+        }
     }
 }

@@ -37,5 +37,15 @@ public class MemberService {
             return memberRepository.save(member);
         }).orElseThrow(() -> new RuntimeException("Member not found with id " + id));
     }
+
+    // Delete
+    public boolean deleteMember(Long id) {
+        if (memberRepository.existsById(id)) {
+            memberRepository.deleteById(id);
+            return true; // deleted successfully
+        } else {
+            return false; // member not found
+        }
+    }
 }
 
