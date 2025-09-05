@@ -90,7 +90,6 @@ public class MemberController {
 
 
     // Update Member
-    // Update Member
     @PatchMapping("/update_member")
     public ResponseEntity<Object> updateMember(
             @RequestParam Long id,
