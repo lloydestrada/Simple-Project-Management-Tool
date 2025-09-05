@@ -2,6 +2,7 @@ package com.simple.pmtool.DTO;
 
 public class MemberRequest {
     private String user_id;
+    private String username;   // <-- add this
     private String email;
     private String password; // store hashed later
 
@@ -12,6 +13,14 @@ public class MemberRequest {
 
     public void setUser_id(String user_id) {
         this.user_id = user_id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {
@@ -32,6 +41,7 @@ public class MemberRequest {
     public String toString() {
         return "MemberRequest{" +
                 "user_id='" + user_id + '\'' +
+                ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
                 '}';

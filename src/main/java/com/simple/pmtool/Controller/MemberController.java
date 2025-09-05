@@ -24,24 +24,30 @@ public class MemberController {
     // Create Member
     @PostMapping("/create_member")
     public ResponseEntity<Object> createMember(@RequestBody MemberRequest request) {
-        Member member = new Member();
-        member.setUserId(request.getUser_id());
-        member.setEmail(request.getEmail());
-        member.setPassword(request.getPassword());
-        member.setUsername(request.getUser_id());
+        try {
+            Member member = new Member();
+            member.setUserId(request.getUser_id());
+            member.setUsername(request.getUsername() != null ? request.getUsername() : request.getUser_id());
+            member.setEmail(request.getEmail() != null ? request.getEmail().toLowerCase() : null);
+            member.setPassword(request.getPassword());
 
-        Member savedMember = memberService.createMember(member);
+            Member savedMember = memberService.createMember(member);
 
-        Map<String, Object> response = Map.of(
-                "data", Map.of(
-                        "user_id", savedMember.getUserId(),
-                        "email", savedMember.getEmail(),
-                        "password", savedMember.getPassword()
-                )
-        );
+            Map<String, Object> response = Map.of(
+                    "data", Map.of(
+                            "user_id", savedMember.getUserId(),
+                            "username", savedMember.getUsername(),
+                            "email", savedMember.getEmail(),
+                            "password", savedMember.getPassword()
+                    )
+            );
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
+
 
 
     // Get All Member
@@ -95,44 +101,48 @@ public class MemberController {
             @RequestParam Long id,
             @RequestBody Map<String, String> requestBody) {
 
-        Optional<Member> memberOpt = memberService.getMemberById(id);
+        try {
+            Optional<Member> memberOpt = memberService.getMemberById(id);
 
-        if (memberOpt.isEmpty()) {
-            return ResponseEntity.ok(Map.of("data", Map.of())); // empty data if not found
+            if (memberOpt.isEmpty()) {
+                return ResponseEntity.ok(Map.of("data", Map.of())); // empty data if not found
+            }
+
+            Member member = memberOpt.get();
+
+            String oldPassword = requestBody.get("old_password");
+            String newPassword = requestBody.get("new_password");
+            String email = requestBody.get("email");
+            String userId = requestBody.get("user_id");
+            String username = requestBody.get("username");
+
+            // Verify old password
+            if (!member.getPassword().equals(oldPassword)) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("error", "Old password does not match"));
+            }
+
+            // Update fields
+            member.setUserId(userId);
+            member.setUsername(username);
+            member.setEmail(email != null ? email.toLowerCase() : member.getEmail());
+            member.setPassword(newPassword);
+
+            Member updatedMember = memberService.updateMember(id, member);
+
+            Map<String, Object> response = Map.of(
+                    "data", Map.of(
+                            "user_id", updatedMember.getUserId(),
+                            "username", updatedMember.getUsername(),
+                            "email", updatedMember.getEmail(),
+                            "password", updatedMember.getPassword()
+                    )
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-
-        Member member = memberOpt.get();
-
-        String oldPassword = requestBody.get("old_password");
-        String newPassword = requestBody.get("new_password");
-        String email = requestBody.get("email");
-        String userId = requestBody.get("user_id");
-        String username = requestBody.get("username"); // NEW
-
-        // Verify old password
-        if (!member.getPassword().equals(oldPassword)) {
-            return ResponseEntity.status(401)
-                    .body(Map.of("error", "Old password does not match"));
-        }
-
-        // Update fields
-        member.setUserId(userId);
-        member.setUsername(username);  // NEW
-        member.setEmail(email);
-        member.setPassword(newPassword);
-
-        Member updatedMember = memberService.updateMember(id, member);
-
-        Map<String, Object> response = Map.of(
-                "data", Map.of(
-                        "user_id", updatedMember.getUserId(),
-                        "username", updatedMember.getUsername(),
-                        "email", updatedMember.getEmail(),
-                        "password", updatedMember.getPassword()
-                )
-        );
-
-        return ResponseEntity.ok(response);
     }
 
 
