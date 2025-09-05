@@ -36,7 +36,7 @@ export default function LoginPage() {
           Project Tool Management
         </h1>
         <p className="text-center text-gray-500 mb-8">
-          Enter your credentials to access your dashboard
+          Enter your credentials
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">

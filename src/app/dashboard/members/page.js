@@ -54,39 +54,46 @@ export default function MembersPage() {
           Add Member
         </button>
 
+        {/* Loading/Error */}
         {loading && <p className="text-gray-500">Loading members...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
         {/* Members Table */}
         {!loading && !error && (
           <div className="overflow-x-auto bg-white rounded-2xl shadow-lg border border-gray-200 mt-2">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full table-fixed divide-y divide-gray-200">
               <thead className="bg-gray-800">
                 <tr>
-                  {["User ID", "Username", "Email", "Actions"].map((header) => (
-                    <th
-                      key={header}
-                      className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider"
-                    >
-                      {header}
-                    </th>
-                  ))}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-[150px]">
+                    User ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-[150px]">
+                    Username
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-[200px]">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider w-[200px]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {members.map((member) => (
                   <tr
-                    key={member.user_id}
-                    className="hover:bg-gray-50 transition"
+                    key={member.id}
+                    className="hover:bg-gray-50 transition-all duration-300"
                   >
-                    <td className="px-6 py-4 text-gray-900">
+                    <td className="px-6 py-4 text-gray-900 min-w-[150px]">
                       {member.user_id}
                     </td>
-                    <td className="px-6 py-4 text-gray-900">
+                    <td className="px-6 py-4 text-gray-900 min-w-[150px]">
                       {member.username}
                     </td>
-                    <td className="px-6 py-4 text-gray-900">{member.email}</td>
-                    <td className="px-6 py-4 flex gap-2">
+                    <td className="px-6 py-4 text-gray-900 min-w-[200px]">
+                      {member.email}
+                    </td>
+                    <td className="px-6 py-4 flex gap-2 min-w-[200px]">
                       <button
                         onClick={() =>
                           router.push(`/dashboard/members/edit/${member.id}`)
@@ -104,6 +111,16 @@ export default function MembersPage() {
                     </td>
                   </tr>
                 ))}
+                {members.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
+                      No members found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
