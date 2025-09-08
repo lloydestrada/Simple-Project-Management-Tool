@@ -21,29 +21,28 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
             String userId = loginRequest.getUser_id();
-            String password = loginRequest.getPassword();
+            String rawPassword = loginRequest.getPassword(); // renamed to avoid confusion
 
-            if (userId == null || password == null) {
+            if (userId == null || rawPassword == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("success", false, "message", "user_id and password are required"));
             }
 
             userId = userId.trim();
-            password = password.trim();
+            rawPassword = rawPassword.trim();
 
-            Member member = memberRepository.findByUserId(userId);
+            String finalRawPassword = rawPassword; // effectively final, so lambda can use it
 
-            if (member == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("success", false, "message", "User not found"));
-            }
-
-            if (!member.getPassword().equals(password)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("success", false, "message", "Invalid credentials"));
-            }
-
-            return ResponseEntity.ok(Map.of("success", true, "message", "Login successful"));
+            return memberRepository.findByUserId(userId)
+                    .map(member -> {
+                        if (!member.getPassword().equals(finalRawPassword)) {
+                            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                    .body(Map.of("success", false, "message", "Invalid credentials"));
+                        }
+                        return ResponseEntity.ok(Map.of("success", true, "message", "Login successful"));
+                    })
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(Map.of("success", false, "message", "User not found")));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

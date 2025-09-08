@@ -16,15 +16,21 @@ public class MemberService {
 
     // Create with duplicate checks
     public Member createMember(Member member) {
-        if (memberRepository.findByUserId(member.getUserId()) != null) {
-            throw new RuntimeException("User ID already exists");
-        }
-        if (memberRepository.findByUsername(member.getUsername()) != null) {
-            throw new RuntimeException("Username already exists");
-        }
-        if (memberRepository.findByEmail(member.getEmail()) != null) {
-            throw new RuntimeException("Email already exists");
-        }
+        memberRepository.findByUserId(member.getUserId())
+                .ifPresent(existing -> {
+                    throw new RuntimeException("User ID already exists");
+                });
+
+        memberRepository.findByUsername(member.getUsername())
+                .ifPresent(existing -> {
+                    throw new RuntimeException("Username already exists");
+                });
+
+        memberRepository.findByEmail(member.getEmail())
+                .ifPresent(existing -> {
+                    throw new RuntimeException("Email already exists");
+                });
+
         return memberRepository.save(member);
     }
 
@@ -41,23 +47,30 @@ public class MemberService {
     // Update with duplicate checks
     public Member updateMember(Long id, Member newData) {
         return memberRepository.findById(id).map(member -> {
+
             // check user_id uniqueness
-            Member existingByUserId = memberRepository.findByUserId(newData.getUserId());
-            if (existingByUserId != null && !existingByUserId.getId().equals(id)) {
-                throw new RuntimeException("User ID already exists");
-            }
+            memberRepository.findByUserId(newData.getUserId())
+                    .ifPresent(existing -> {
+                        if (!existing.getId().equals(id)) {
+                            throw new RuntimeException("User ID already exists");
+                        }
+                    });
 
             // check username uniqueness
-            Member existingByUsername = memberRepository.findByUsername(newData.getUsername());
-            if (existingByUsername != null && !existingByUsername.getId().equals(id)) {
-                throw new RuntimeException("Username already exists");
-            }
+            memberRepository.findByUsername(newData.getUsername())
+                    .ifPresent(existing -> {
+                        if (!existing.getId().equals(id)) {
+                            throw new RuntimeException("Username already exists");
+                        }
+                    });
 
             // check email uniqueness
-            Member existingByEmail = memberRepository.findByEmail(newData.getEmail());
-            if (existingByEmail != null && !existingByEmail.getId().equals(id)) {
-                throw new RuntimeException("Email already exists");
-            }
+            memberRepository.findByEmail(newData.getEmail())
+                    .ifPresent(existing -> {
+                        if (!existing.getId().equals(id)) {
+                            throw new RuntimeException("Email already exists");
+                        }
+                    });
 
             // update fields
             member.setUserId(newData.getUserId());
