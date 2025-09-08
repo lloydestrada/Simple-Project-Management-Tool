@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 @RestController
 @RequestMapping("/test01")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -20,25 +19,24 @@ public class MemberController {
     @Autowired
     private MemberService memberService;
 
-
-    // Create Member
+    //create member
     @PostMapping("/create_member")
     public ResponseEntity<Object> createMember(@RequestBody MemberRequest request) {
         try {
             Member member = new Member();
-            member.setUserId(request.getUser_id());
-            member.setUsername(request.getUsername() != null ? request.getUsername() : request.getUser_id());
-            member.setEmail(request.getEmail() != null ? request.getEmail().toLowerCase() : null);
+            member.setUserId(request.getUser_id().trim());
+            member.setUsername(request.getUsername() != null ? request.getUsername().trim() : request.getUser_id().trim());
+            member.setEmail(request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null);
             member.setPassword(request.getPassword());
 
             Member savedMember = memberService.createMember(member);
 
             Map<String, Object> response = Map.of(
                     "data", Map.of(
+                            "id", savedMember.getId(),
                             "user_id", savedMember.getUserId(),
                             "username", savedMember.getUsername(),
-                            "email", savedMember.getEmail(),
-                            "password", savedMember.getPassword()
+                            "email", savedMember.getEmail()
                     )
             );
 
@@ -48,54 +46,48 @@ public class MemberController {
         }
     }
 
-
-
-    // Get All Member
+    // Get all members
     @GetMapping("/get_all_member")
     public ResponseEntity<Object> getAllMembers() {
         List<Member> members = memberService.getAllMembers();
 
-        // Use Collectors.toList() instead of toList()
         List<Map<String, Object>> memberData = members.stream().map(m -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", m.getId());
             map.put("user_id", m.getUserId());
             map.put("username", m.getUsername());
             map.put("email", m.getEmail());
-            map.put("password", m.getPassword());
             return map;
         }).collect(Collectors.toList());
 
-        Map<String, Object> response = Map.of("data", memberData);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Map.of("data", memberData));
     }
 
-    //Get Member using ID
+
+    // Get member by id
     @GetMapping("/get_member")
     public ResponseEntity<Object> getMember(@RequestParam Long id) {
-        Optional<Member> memberOpt = memberService.getMemberById(id);
+        return memberService.getMemberById(id)
+                .map(m -> {
+                    Map<String, Object> memberData = new HashMap<>();
+                    memberData.put("id", m.getId());
+                    memberData.put("user_id", m.getUserId());
+                    memberData.put("username", m.getUsername());
+                    memberData.put("email", m.getEmail());
 
-        if (memberOpt.isPresent()) {
-            Member m = memberOpt.get();
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("data", memberData);
 
-            Map<String, Object> memberData = Map.of(
-                    "user_id", m.getUserId(),
-                    "username", m.getUsername(),
-                    "email", m.getEmail(),
-                    "password", m.getPassword()
-            );
-
-            Map<String, Object> response = Map.of("data", memberData);
-            return ResponseEntity.ok(response);
-        } else {
-            Map<String, Object> response = Map.of("data", Map.of());
-            return ResponseEntity.ok(response);
-        }
+                    return ResponseEntity.ok((Object) response);
+                })
+                .orElseGet(() -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("data", new HashMap<>());
+                    return ResponseEntity.ok((Object) response);
+                });
     }
 
-
-
-    // Update Member
+    //update member
     @PatchMapping("/update_member")
     public ResponseEntity<Object> updateMember(
             @RequestParam Long id,
@@ -103,9 +95,8 @@ public class MemberController {
 
         try {
             Optional<Member> memberOpt = memberService.getMemberById(id);
-
             if (memberOpt.isEmpty()) {
-                return ResponseEntity.ok(Map.of("data", Map.of())); // empty data if not found
+                return ResponseEntity.ok(Map.of("data", Map.of())); // empty if not found
             }
 
             Member member = memberOpt.get();
@@ -117,25 +108,25 @@ public class MemberController {
             String username = requestBody.get("username");
 
             // Verify old password
-            if (!member.getPassword().equals(oldPassword)) {
+            if (oldPassword != null && !member.getPassword().equals(oldPassword)) {
                 return ResponseEntity.status(401)
                         .body(Map.of("error", "Old password does not match"));
             }
 
-            // Update fields
-            member.setUserId(userId);
-            member.setUsername(username);
-            member.setEmail(email != null ? email.toLowerCase() : member.getEmail());
-            member.setPassword(newPassword);
+            // Apply updates
+            if (userId != null) member.setUserId(userId.trim());
+            if (username != null) member.setUsername(username.trim());
+            if (email != null) member.setEmail(email.trim().toLowerCase());
+            if (newPassword != null) member.setPassword(newPassword);
 
             Member updatedMember = memberService.updateMember(id, member);
 
             Map<String, Object> response = Map.of(
                     "data", Map.of(
+                            "id", updatedMember.getId(),
                             "user_id", updatedMember.getUserId(),
                             "username", updatedMember.getUsername(),
-                            "email", updatedMember.getEmail(),
-                            "password", updatedMember.getPassword()
+                            "email", updatedMember.getEmail()
                     )
             );
 
@@ -145,8 +136,7 @@ public class MemberController {
         }
     }
 
-
-    // Delete Member
+    //delete member
     @DeleteMapping("/delete_member")
     public ResponseEntity<Object> deleteMember(@RequestParam Long id) {
         boolean deleted = memberService.deleteMember(id);

@@ -17,7 +17,7 @@ public class Project {
     private String description;
 
     @ManyToOne
-    @JoinColumn(name = "owner_id", referencedColumnName = "id")
+    @JoinColumn(name = "owner_id")
     private Member owner;
 
     // Getters and setters
