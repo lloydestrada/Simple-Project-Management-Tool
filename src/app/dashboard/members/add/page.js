@@ -2,31 +2,33 @@
 
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+import { createMember } from "@/app/services/memberService";
 
 export default function AddMemberPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+
+  // Form state
+  const [formData, setFormData] = useState({
+    user_id: "",
+    username: "",
+    email: "",
+    password: "",
+  });
+
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  // Handle input changes
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await axios.post(
-        "http://localhost:8080/test01/create_member",
-        {
-          user_id: userId,
-          username,
-          email,
-          password,
-        }
-      );
+      const res = await createMember(formData);
 
       if (res.data?.data) {
         setMessage("Member added successfully!");
@@ -38,7 +40,7 @@ export default function AddMemberPage() {
       }
     } catch (err) {
       console.error(err);
-      setMessage((err.response?.data?.error || err.message));
+      setMessage(err.response?.data?.error || err.message);
       setIsError(true);
     }
   };
@@ -52,57 +54,29 @@ export default function AddMemberPage() {
           </h1>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                User ID
-              </label>
-              <input
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
+            {["user_id", "username", "email", "password"].map((field) => (
+              <div key={field}>
+                <label className="block mb-1 font-medium text-gray-700">
+                  {field
+                    .replace("_", " ")
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+                </label>
+                <input
+                  type={
+                    field === "password"
+                      ? "password"
+                      : field === "email"
+                      ? "email"
+                      : "text"
+                  }
+                  name={field}
+                  value={formData[field]}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
+                  required
+                />
+              </div>
+            ))}
 
             <button
               type="submit"
