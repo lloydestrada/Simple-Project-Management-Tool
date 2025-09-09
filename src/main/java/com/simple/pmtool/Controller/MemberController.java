@@ -6,6 +6,7 @@ import com.simple.pmtool.DTO.MemberRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -19,17 +20,19 @@ public class MemberController {
     @Autowired
     private MemberService memberService;
 
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     //create member
     @PostMapping("/create_member")
     public ResponseEntity<Object> createMember(@RequestBody MemberRequest request) {
         try {
             Member member = new Member();
             member.setUserId(request.getUser_id().trim());
-            member.setUsername(request.getUsername() != null ? request.getUsername().trim() : request.getUser_id().trim());
-            member.setEmail(request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null);
-            member.setPassword(request.getPassword());
+            member.setUsername(request.getUsername().trim());
+            member.setEmail(request.getEmail().trim().toLowerCase());
+            member.setPassword(passwordEncoder.encode(request.getPassword()));
 
-            Member savedMember = memberService.createMember(member);
+            Member savedMember = memberService.createMember(member); // <-- throws RuntimeException for duplicates
 
             Map<String, Object> response = Map.of(
                     "data", Map.of(
@@ -41,10 +44,12 @@ public class MemberController {
             );
 
             return ResponseEntity.ok(response);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); // <-- returns 400, not 500
         }
     }
+
 
     // Get all members
     @GetMapping("/get_all_member")
@@ -63,10 +68,9 @@ public class MemberController {
         return ResponseEntity.ok(Map.of("data", memberData));
     }
 
-
     // Get member by id
     @GetMapping("/get_member")
-    public ResponseEntity<Object> getMember(@RequestParam Long id) {
+    public ResponseEntity<Map<String, Map<String, Object>>> getMember(@RequestParam Long id) {
         return memberService.getMemberById(id)
                 .map(m -> {
                     Map<String, Object> memberData = new HashMap<>();
@@ -75,17 +79,11 @@ public class MemberController {
                     memberData.put("username", m.getUsername());
                     memberData.put("email", m.getEmail());
 
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("data", memberData);
-
-                    return ResponseEntity.ok((Object) response);
+                    return ResponseEntity.ok(Map.of("data", memberData));
                 })
-                .orElseGet(() -> {
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("data", new HashMap<>());
-                    return ResponseEntity.ok((Object) response);
-                });
+                .orElseGet(() -> ResponseEntity.ok(Map.of("data", new HashMap<>())));
     }
+
 
     //update member
     @PatchMapping("/update_member")
@@ -107,17 +105,20 @@ public class MemberController {
             String userId = requestBody.get("user_id");
             String username = requestBody.get("username");
 
-            // Verify old password
-            if (oldPassword != null && !member.getPassword().equals(oldPassword)) {
-                return ResponseEntity.status(401)
-                        .body(Map.of("error", "Old password does not match"));
+            // Verify old password if changing password
+            if (oldPassword != null && newPassword != null) {
+                if (!passwordEncoder.matches(oldPassword, member.getPassword())) {
+                    return ResponseEntity.status(401)
+                            .body(Map.of("error", "Old password does not match"));
+                }
+                // Hash new password before saving
+                member.setPassword(passwordEncoder.encode(newPassword));
             }
 
             // Apply updates
             if (userId != null) member.setUserId(userId.trim());
             if (username != null) member.setUsername(username.trim());
             if (email != null) member.setEmail(email.trim().toLowerCase());
-            if (newPassword != null) member.setPassword(newPassword);
 
             Member updatedMember = memberService.updateMember(id, member);
 
