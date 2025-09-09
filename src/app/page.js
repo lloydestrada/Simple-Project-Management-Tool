@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { login } from "@/app/services/loginService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,17 +12,15 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:8080/testlogin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, password }),
-      });
-      const data = await res.json();
+      const res = await login({ user_id: userId, password });
+      const data = res.data;
+
       setMessage(
         typeof data.message === "string"
           ? data.message
           : JSON.stringify(data.message)
       );
+
       if (data.success) router.push("/dashboard");
     } catch (error) {
       console.error(error);
@@ -35,9 +34,7 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
           Project Tool Management
         </h1>
-        <p className="text-center text-gray-500 mb-8">
-          Enter your credentials
-        </p>
+        <p className="text-center text-gray-500 mb-8">Enter your credentials</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -79,7 +76,7 @@ export default function LoginPage() {
         )}
 
         <p className="text-center text-gray-400 mt-6 text-sm">
-         Project Management Tool Assessment
+          Project Management Tool Assessment
         </p>
       </div>
     </div>

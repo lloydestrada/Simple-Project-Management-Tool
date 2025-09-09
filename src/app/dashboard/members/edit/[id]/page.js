@@ -2,67 +2,69 @@
 
 import { useState, useEffect, use } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+import { getMember, updateMember } from "@/app/services/memberService";
 
 export default function UpdateMemberPage({ params }) {
   const router = useRouter();
 
-  // Use React.use() to unwrap params if it's a Promise
-  const resolvedParams = use(params);
-  const { id } = resolvedParams;
+  // Unwrap params Promise
+  const { id } = use(params);
 
-  const [userId, setUserId] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [formData, setFormData] = useState({
+    user_id: "",
+    username: "",
+    email: "",
+    old_password: "",
+    new_password: "",
+  });
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
+  // Fetch member data
   useEffect(() => {
-    const fetchMember = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:8080/test01/get_member?id=${id}`
-        );
+        const res = await getMember(id);
         if (res.data?.data) {
           const data = res.data.data;
-          setUserId(data.user_id || "");
-          setUsername(data.username || "");
-          setEmail(data.email || "");
-          setOldPassword(data.password || "");
+          setFormData({
+            user_id: data.user_id || "",
+            username: data.username || "",
+            email: data.email || "",
+            old_password: data.password || "",
+            new_password: "",
+          });
         }
       } catch (err) {
         console.error(err);
+        setMessage("Failed to fetch member data.");
+        setIsError(true);
       }
     };
-    fetchMember();
+    fetchData();
   }, [id]);
 
-  const handleUpdate = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await axios.patch(
-        `http://localhost:8080/test01/update_member?id=${id}`,
-        {
-          user_id: userId,
-          username,
-          email,
-          old_password: oldPassword,
-          new_password: newPassword,
-        }
-      );
-
+      const res = await updateMember(id, formData);
       if (res.data?.data) {
         setMessage("Member updated successfully!");
+        setIsError(false);
         setTimeout(() => router.push("/dashboard/members"), 1000);
       } else {
         setMessage("Failed to update member.");
+        setIsError(true);
       }
     } catch (err) {
       console.error(err);
-      setMessage("Error: " + (err.response?.data?.error || err.message));
+      setMessage(err.response?.data?.error || err.message);
+      setIsError(true);
     }
   };
 
@@ -74,15 +76,16 @@ export default function UpdateMemberPage({ params }) {
             Update Member
           </h1>
 
-          <form className="space-y-4" onSubmit={handleUpdate}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="block mb-1 font-medium text-gray-700">
                 User ID
               </label>
               <input
                 type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                name="user_id"
+                value={formData.user_id}
+                onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
                 required
               />
@@ -94,8 +97,9 @@ export default function UpdateMemberPage({ params }) {
               </label>
               <input
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
                 required
               />
@@ -107,8 +111,9 @@ export default function UpdateMemberPage({ params }) {
               </label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
                 required
               />
@@ -120,8 +125,9 @@ export default function UpdateMemberPage({ params }) {
               </label>
               <input
                 type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
+                name="old_password"
+                value={formData.old_password}
+                onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
                 required
               />
@@ -133,11 +139,11 @@ export default function UpdateMemberPage({ params }) {
               </label>
               <input
                 type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
+                name="new_password"
+                value={formData.new_password}
+                onChange={handleChange}
                 placeholder="Enter new password"
-                required
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
               />
             </div>
 
@@ -148,9 +154,22 @@ export default function UpdateMemberPage({ params }) {
               Update Member
             </button>
           </form>
+
+          {/* Message Block */}
+          {message && (
+            <div
+              className={`mt-6 p-3 rounded-lg text-center font-medium ${
+                isError
+                  ? "bg-red-100 text-red-700 border border-red-400"
+                  : "bg-green-100 text-green-700 border border-green-400"
+              }`}
+            >
+              {message}
+            </div>
+          )}
         </div>
 
-        {/* Back button below the box */}
+        {/* Back Button */}
         <div className="mt-4 text-center">
           <button
             onClick={() => router.push("/dashboard/members")}
@@ -159,10 +178,6 @@ export default function UpdateMemberPage({ params }) {
             &larr; Back
           </button>
         </div>
-
-        {message && (
-          <p className="text-center mt-4 text-sm text-gray-700">{message}</p>
-        )}
       </div>
     </DashboardLayout>
   );

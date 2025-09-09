@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+import { getMembers, deleteMember } from "@/app/services/memberService";
+
 
 export default function MembersPage() {
   const router = useRouter();
@@ -11,28 +12,23 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchMembers = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:8080/test01/get_all_member"
-      );
-      setMembers(res.data.data);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load members.");
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchMembers();
+    getMembers()
+      .then((res) => {
+        setMembers(res.data.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Failed to load members.");
+        setLoading(false);
+      });
   }, []);
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this member?")) return;
     try {
-      await axios.delete(`http://localhost:8080/test01/delete_member?id=${id}`);
+      await deleteMember(id);
       setMembers(members.filter((m) => m.id !== id));
     } catch (err) {
       console.error(err);
@@ -43,10 +39,8 @@ export default function MembersPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col space-y-6">
-        {/* Page Title */}
         <h1 className="text-3xl font-bold text-gray-900">Members</h1>
 
-        {/* Add Member Button */}
         <button
           onClick={() => router.push("/dashboard/members/add")}
           className="px-5 py-2 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition shadow self-start"
@@ -54,11 +48,9 @@ export default function MembersPage() {
           Add Member
         </button>
 
-        {/* Loading/Error */}
         {loading && <p className="text-gray-500">Loading members...</p>}
         {error && <p className="text-red-500">{error}</p>}
 
-        {/* Members Table */}
         {!loading && !error && (
           <div className="overflow-x-auto bg-white rounded-2xl shadow-lg border border-gray-200 mt-2">
             <table className="min-w-full table-fixed divide-y divide-gray-200">

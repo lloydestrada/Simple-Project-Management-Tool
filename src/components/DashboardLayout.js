@@ -29,16 +29,16 @@ export default function DashboardLayout({ children }) {
             Members
           </Link>
           <Link
-            href="/dashboard/tasks"
-            className="p-2 rounded hover:bg-gray-700 font-medium"
-          >
-            Tasks
-          </Link>
-          <Link
             href="/dashboard/projects"
             className="p-2 rounded hover:bg-gray-700 font-medium"
           >
             Projects
+          </Link>
+          <Link
+            href="/dashboard/tasks"
+            className="p-2 rounded hover:bg-gray-700 font-medium"
+          >
+            Tasks
           </Link>
           <Link
             href="/dashboard/change-logs"
