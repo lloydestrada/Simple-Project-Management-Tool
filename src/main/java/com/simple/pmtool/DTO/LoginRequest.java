@@ -1,15 +1,18 @@
 package com.simple.pmtool.DTO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class LoginRequest {
-    private String user_id;  // user_id
+
+    private String userId;
+
     private String password;
 
-    // getters and setters
-    public String getUser_id() {
-        return user_id;
+    public String getUserId() {
+        return userId;
     }
-    public void setUser_id(String user_id) {
-        this.user_id = user_id;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getPassword() {
@@ -19,4 +22,3 @@ public class LoginRequest {
         this.password = password;
     }
 }
-
