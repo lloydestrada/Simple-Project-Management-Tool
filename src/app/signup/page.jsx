@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/app/services/loginService";
+import { signup } from "@/app/services/signupService"; // create this service
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
   const [userId, setUserId] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
@@ -13,20 +15,23 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await login({ userId, password });
+      const res = await signup({ userId, username, email, password });
       const data = res.data;
 
-      setMessage(data.message);
+      setMessage(data.message || "Signup successful");
       setSuccess(data.success);
 
       if (data.success) {
-        localStorage.setItem("token", data.token); // Store JWT
-        router.push("/dashboard"); // Redirect to dashboard
+        router.push("/");
       }
     } catch (error) {
-      console.error(error);
-      if (error.response) {
-        setMessage(error.response.data.message || "Login failed");
+      // Check if backend sent a message
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setMessage(error.response.data.message);
       } else {
         setMessage("Something went wrong. Please try again.");
       }
@@ -38,9 +43,8 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white shadow-2xl rounded-3xl p-10 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Project Tool Management
+          Sign Up
         </h1>
-        <p className="text-center text-gray-500 mb-8">Enter your credentials</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -52,6 +56,34 @@ export default function LoginPage() {
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               placeholder="Enter your user ID"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2 font-medium text-gray-700">
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2 font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               className="w-full px-5 py-3 border border-gray-300 rounded-xl bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
               required
             />
@@ -73,9 +105,9 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
+            className="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition"
           >
-            Login
+            Sign Up
           </button>
         </form>
 
@@ -90,17 +122,13 @@ export default function LoginPage() {
         )}
 
         <p className="text-center mt-4">
-          Don't have an account?{" "}
+          Already have an account?{" "}
           <button
             className="text-blue-600 font-semibold hover:underline"
-            onClick={() => router.push("/signup")}
+            onClick={() => router.push("/")}
           >
-            Sign Up
+            Login
           </button>
-        </p>
-
-        <p className="text-center text-gray-400 mt-6 text-sm">
-          Project Management Tool Assessment
         </p>
       </div>
     </div>
