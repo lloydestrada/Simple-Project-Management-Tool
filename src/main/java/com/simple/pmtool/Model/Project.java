@@ -1,5 +1,6 @@
 package com.simple.pmtool.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -18,6 +19,7 @@ public class Project {
 
     @ManyToOne
     @JoinColumn(name = "owner_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})  // <-- add this
     private Member owner;
 
     // Getters and setters

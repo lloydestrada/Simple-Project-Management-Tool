@@ -5,15 +5,23 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
+    private static final long EXPIRATION_TIME = 86400000; // 1 day
 
-    private static final long EXPIRATION_TIME = 86400000; // 1 day in ms
+    // 512-bit (64-byte) Base64 secret for HS512
+    private static final String SECRET_BASE64 = "+wb8Y90ydoEA57TfdaR3BM7rwXpkkxwk6Wvg0f4HdR0vj/DSsxUgyDuDlbAAoUUBOAWskv+YmkCWOPTZyxdmhA==";
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS512);;
+    private final Key key;
+
+    public JwtUtil() {
+        byte[] decoded = Base64.getDecoder().decode(SECRET_BASE64);
+        this.key = Keys.hmacShaKeyFor(decoded); // HS512 key
+    }
 
     // Generate JWT
     public String generateToken(String userId) {
@@ -35,7 +43,7 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    // Validate token
+    // Validate JWT
     public boolean validateToken(String token, String userId) {
         try {
             String extractedUser = extractUserId(token);

@@ -105,7 +105,7 @@ public class AuthController {
                     });
 
         } catch (Exception e) {
-            e.printStackTrace(); // 🔥 show full stack trace
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "message", "Login failed: " + e.getMessage()));
         }
