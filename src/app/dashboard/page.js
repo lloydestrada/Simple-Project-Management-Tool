@@ -4,8 +4,10 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
 import { getMembers } from "@/app/services/memberService";
 import { getProjects } from "@/app/services/projectService";
+import { getTasks } from "@/app/services/taskService"; // added
 
-export default function DashboardHome({ user }) {
+export default function DashboardHome() {
+  const [user, setUser] = useState({ username: "User" });
   const [stats, setStats] = useState({
     members: 0,
     projects: 0,
@@ -15,21 +17,25 @@ export default function DashboardHome({ user }) {
   const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
-    // Fetch counts
+    // Load user from localStorage
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
+
     const fetchStats = async () => {
       try {
-        const membersRes = await getMembers();
-        const projectsRes = await getProjects();
-        const tasksRes = await getTasks(); // optional
-        // Mock change logs or fetch if API exists
+        const [membersRes, projectsRes, tasksRes] = await Promise.all([
+          getMembers(),
+          getProjects(),
+          getTasks(),
+        ]);
+
         setStats({
           members: membersRes.data.data.length,
           projects: projectsRes.data.data.length,
-          tasks: tasksRes?.data?.data?.length || 0,
-          changeLogs: 5, // replace with actual API if available
+          tasks: tasksRes.data.data.length,
+          changeLogs: 5, // keep mock or fetch real if API exists
         });
 
-        // Recent activities mockup
         setRecentActivities([
           { id: 1, text: "Alice created Project Alpha" },
           { id: 2, text: "Bob added Task 'Design UI'" },
@@ -49,7 +55,7 @@ export default function DashboardHome({ user }) {
         {/* Welcome */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900">
-            Welcome, {user?.username || "User"}!
+            Welcome, {user.username}!
           </h1>
           <p className="text-gray-600 mt-2">
             Here's what's happening in your project management tool
@@ -75,16 +81,16 @@ export default function DashboardHome({ user }) {
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-4">
           <ActionButton
+            label="Add Member"
+            onClick={() => (window.location.href = "/dashboard/members/add")}
+          />
+          <ActionButton
             label="Add Project"
             onClick={() => (window.location.href = "/dashboard/projects/add")}
           />
           <ActionButton
             label="Add Task"
             onClick={() => (window.location.href = "/dashboard/tasks/add")}
-          />
-          <ActionButton
-            label="Add Member"
-            onClick={() => (window.location.href = "/dashboard/members/add")}
           />
         </div>
 
