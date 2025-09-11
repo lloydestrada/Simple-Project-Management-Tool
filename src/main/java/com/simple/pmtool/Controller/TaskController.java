@@ -43,10 +43,15 @@ public class TaskController {
     // Patch Task
     @PatchMapping("/patch_task")
     public ResponseEntity<?> patchTask(@RequestParam Long id, @RequestBody TaskRequest req) {
-        return taskService.updateTask(id, req)
-                .map(task -> ResponseEntity.ok(Map.of("status", "success", "data", task)))
-                .orElse(ResponseEntity.status(404).body(Map.of("status", "error", "message", "Task not found")));
+        try {
+            return taskService.updateTask(id, req)
+                    .map(task -> ResponseEntity.ok(Map.of("status", "success", "data", task)))
+                    .orElse(ResponseEntity.status(404).body(Map.of("status", "error", "message", "Task not found")));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", e.getMessage()));
+        }
     }
+
 
     // Delete Task
     @DeleteMapping("/delete_task")

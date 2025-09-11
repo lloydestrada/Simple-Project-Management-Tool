@@ -5,7 +5,9 @@ public class TaskRequest {
     private String name;
     private String status;
     private String contents;
+    private Long userId; // NEW
 
+    // Getters & Setters
     public Long getProject_id() {
         return project_id;
     }
@@ -38,13 +40,11 @@ public class TaskRequest {
         this.contents = contents;
     }
 
-    @Override
-    public String toString() {
-        return "TaskRequest{" +
-                "project_id=" + project_id +
-                ", name='" + name + '\'' +
-                ", status='" + status + '\'' +
-                ", contents='" + contents + '\'' +
-                '}';
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }
