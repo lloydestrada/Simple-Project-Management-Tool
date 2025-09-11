@@ -20,7 +20,6 @@ export default function LoginPage() {
       setSuccess(data.success);
 
       if (data.success) {
-        localStorage.setItem("token", data.token); // Store JWT
         router.push("/dashboard"); // Redirect to dashboard
       }
     } catch (error) {

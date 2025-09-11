@@ -1,66 +1,39 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
-import { getTask, updateTask } from "@/app/services/taskService";
-import { getProjects } from "@/app/services/projectService";
+import { createChangeLog } from "@/app/services/changeLogService";
+import { getTasks } from "@/app/services/taskService";
 
-export default function EditTaskPage({ params }) {
+const STATUS_OPTIONS = ["PENDING", "IN_PROGRESS", "COMPLETED"];
+
+export default function AddChangeLogPage() {
   const router = useRouter();
-  const resolvedParams = use(params); // unwrap the Promise
-  const taskId = resolvedParams.id;
-
-  const [projects, setProjects] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [form, setForm] = useState({
-    project_id: "",
-    name: "",
-    status: "PENDING",
-    contents: "",
+    taskId: "",
+    oldStatus: "",
+    newStatus: "",
+    remark: "",
+    action: "STATUS_CHANGED", // default action
   });
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
+  const [messageType, setMessageType] = useState(""); // "success" | "error"
 
   useEffect(() => {
-    // Fetch all projects
-    getProjects()
+    getTasks()
       .then((res) => {
-        const projectList = Array.isArray(res.data)
+        const data = Array.isArray(res.data)
           ? res.data
-          : res.data.data || [];
-        setProjects(projectList);
+          : res.data.data || res.data.content || [];
+        setTasks(data);
       })
       .catch(() => {
-        setMessage("Failed to load projects.");
+        setMessage("Failed to load tasks.");
         setMessageType("error");
       });
-
-    // Fetch the task by id
-    if (taskId) {
-      getTask(taskId)
-        .then((res) => {
-          if (res.data.status === "success") {
-            const taskData = res.data.data;
-            setForm({
-              name: taskData.name || "",
-              status: taskData.status || "PENDING",
-              contents: taskData.contents || "",
-              // Force project_id to string for <select>
-              project_id: taskData.project?.id
-                ? String(taskData.project.id)
-                : "",
-            });
-          } else {
-            setMessage("Task not found.");
-            setMessageType("error");
-          }
-        })
-        .catch(() => {
-          setMessage("Failed to load task.");
-          setMessageType("error");
-        });
-    }
-  }, [taskId]);
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -68,14 +41,21 @@ export default function EditTaskPage({ params }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form.taskId || !form.oldStatus || !form.newStatus) {
+      setMessage("Please select task and statuses.");
+      setMessageType("error");
+      return;
+    }
+
     try {
-      await updateTask(taskId, form);
-      setMessage("Task updated successfully!");
+      await createChangeLog(form);
+      setMessage("Change log created successfully!");
       setMessageType("success");
-      setTimeout(() => router.push("/dashboard/tasks"), 1000);
+      setTimeout(() => router.push("/dashboard/change-logs"), 1000);
     } catch (err) {
       console.error(err);
-      setMessage("Failed to update task.");
+      setMessage("Failed to create change log. Make sure you are logged in.");
       setMessageType("error");
     }
   };
@@ -84,7 +64,9 @@ export default function EditTaskPage({ params }) {
     <DashboardLayout>
       <div className="min-h-screen bg-gray-100 py-10">
         <div className="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-          <h1 className="text-2xl font-bold mb-4 text-gray-900">Edit Task</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900">
+            Add Change Log
+          </h1>
 
           {message && (
             <p
@@ -97,77 +79,88 @@ export default function EditTaskPage({ params }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Project Select */}
+            {/* Task Select */}
             <div>
               <label className="block mb-1 font-medium text-gray-700">
-                Project
+                Task
               </label>
               <select
-                name="project_id"
-                value={form.project_id}
+                name="taskId"
+                value={form.taskId}
                 onChange={handleChange}
                 className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
                 required
               >
-                <option value="">-- Select Project --</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.name}
+                <option value="">-- Select Task --</option>
+                {tasks.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name || `Task ${t.id}`}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Task Name */}
+            {/* Old Status */}
             <div>
               <label className="block mb-1 font-medium text-gray-700">
-                Task Name
+                Old Status
               </label>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
+              <select
+                name="oldStatus"
+                value={form.oldStatus}
                 onChange={handleChange}
                 className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
                 required
-              />
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Status
-              </label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
               >
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
+                <option value="">-- Select Old Status --</option>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status.replace("_", " ")}
+                  </option>
+                ))}
               </select>
             </div>
 
-            {/* Contents */}
+            {/* New Status */}
             <div>
               <label className="block mb-1 font-medium text-gray-700">
-                Contents
+                New Status
+              </label>
+              <select
+                name="newStatus"
+                value={form.newStatus}
+                onChange={handleChange}
+                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
+                required
+              >
+                <option value="">-- Select New Status --</option>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Remark */}
+            <div>
+              <label className="block mb-1 font-medium text-gray-700">
+                Remark
               </label>
               <textarea
-                name="contents"
-                value={form.contents}
+                name="remark"
+                value={form.remark}
                 onChange={handleChange}
                 className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
                 rows={3}
+                placeholder="Additional remarks..."
               />
             </div>
 
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => router.push("/dashboard/tasks")}
+                onClick={() => router.push("/dashboard/change-logs")}
                 className="w-1/2 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 transition"
               >
                 Cancel
@@ -176,7 +169,7 @@ export default function EditTaskPage({ params }) {
                 type="submit"
                 className="w-1/2 bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition"
               >
-                Update Task
+                Save Log
               </button>
             </div>
           </form>
