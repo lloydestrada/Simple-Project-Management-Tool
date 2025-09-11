@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The **Project Management Tool (PMT)** is a web-based application designed to help teams manage projects, tasks, and members efficiently. It provides an intuitive dashboard with quick statistics, drag-and-drop task management, and detailed change logs for tasks.
+The **Project Management Tool (PMT)** is a web-based application designed to help teams manage projects, tasks, and members. It provides a dashboard, drag-and-drop task management, and detailed change logs for tasks.
 
 ### Core Features
 
