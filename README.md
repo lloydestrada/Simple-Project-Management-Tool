@@ -27,7 +27,7 @@ The **Project Management Tool (PMT)** is a web-based application designed to hel
 
 ## Tech Stack
 
-- **Frontend:** Next.js, React, Tailwind CSS, @hello-pangea/dnd
+- **Frontend:** Next.js, React, Tailwind CSS, @hello-pangea/dnd (for drag n drop)
 - **Backend:** Java Spring Boot, Spring Security, REST APIs
-- **Database:** H2 / MySQL (configurable in `application.properties`)
-- **Version Control:** GitHub
+- **Database:** MySQL (configurable in `application.properties`)
+- **API Testing:** Postman API
