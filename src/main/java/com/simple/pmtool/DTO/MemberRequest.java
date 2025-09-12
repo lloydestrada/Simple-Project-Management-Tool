@@ -2,9 +2,9 @@ package com.simple.pmtool.DTO;
 
 public class MemberRequest {
     private String user_id;
-    private String username;   // <-- add this
+    private String username;
     private String email;
-    private String password; // store hashed later
+    private String password;
 
     // getters and setters
     public String getUser_id() {

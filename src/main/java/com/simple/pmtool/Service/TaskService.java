@@ -40,7 +40,7 @@ public class TaskService {
 
         Task saved = taskRepository.save(task);
 
-        // Log creation with proper statuses
+        // Log creation with status
         createLog(
                 saved.getId(),
                 "CREATED",

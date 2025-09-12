@@ -5,7 +5,7 @@ public class TaskRequest {
     private String name;
     private String status;
     private String contents;
-    private Long userId; // NEW
+    private Long userId;
 
     // Getters & Setters
     public Long getProject_id() {

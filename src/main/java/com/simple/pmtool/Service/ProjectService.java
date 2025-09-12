@@ -24,7 +24,7 @@ public class ProjectService {
     // Helper: map Project -> frontend JSON
     private Map<String, Object> toProjectResponse(Project project) {
         Map<String, Object> map = new HashMap<>();
-        map.put("id", project.getId()); // <-- add this line
+        map.put("id", project.getId());
         map.put("user_id", project.getOwner() != null ? project.getOwner().getUserId() : null);
         map.put("name", project.getName());
         map.put("description", project.getDescription());

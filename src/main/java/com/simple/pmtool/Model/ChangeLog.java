@@ -42,21 +42,25 @@ public class ChangeLog {
     public void setId(Long id) {
         this.id = id;
     }
-
     public Long getTaskId() {
         return taskId; }
+
     public void setTaskId(Long taskId) {
         this.taskId = taskId;
     }
+
     public String getUserId() {
-        return userId; }
+        return userId;
+    }
 
     public void setUserId(String userId) {
-        this.userId = userId; }
+        this.userId = userId;
+    }
 
     public String getAction() {
         return action;
     }
+
     public void setAction(String action) {
         this.action = action;
     }
@@ -71,6 +75,7 @@ public class ChangeLog {
     public String getNewStatus() {
         return newStatus;
     }
+
     public void setNewStatus(String newStatus) {
         this.newStatus = newStatus;
     }
@@ -78,6 +83,7 @@ public class ChangeLog {
     public String getRemark() {
         return remark;
     }
+
     public void setRemark(String remark) {
         this.remark = remark;
     }
@@ -85,6 +91,7 @@ public class ChangeLog {
     public String getDetails() {
         return details;
     }
+
     public void setDetails(String details) {
         this.details = details;
     }

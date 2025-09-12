@@ -1,7 +1,5 @@
 package com.simple.pmtool.DTO;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class LoginRequest {
 
     private String userId;

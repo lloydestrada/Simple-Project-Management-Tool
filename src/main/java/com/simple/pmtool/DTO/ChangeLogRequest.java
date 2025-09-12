@@ -5,10 +5,9 @@ public class ChangeLogRequest {
     private String oldStatus;
     private String newStatus;
     private String remark;
-    private String action;  // <-- add this
+    private String action;
 
     // Getters and setters
-
     public Long getTaskId() {
         return taskId;
     }
