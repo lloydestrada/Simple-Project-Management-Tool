@@ -20,6 +20,7 @@ export default function LoginPage() {
       setSuccess(data.success);
 
       if (data.success) {
+        localStorage.setItem("token", data.token); // Store JWT
         router.push("/dashboard"); // Redirect to dashboard
       }
     } catch (error) {
@@ -89,7 +90,7 @@ export default function LoginPage() {
         )}
 
         <p className="text-center mt-4">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <button
             className="text-blue-600 font-semibold hover:underline"
             onClick={() => router.push("/signup")}

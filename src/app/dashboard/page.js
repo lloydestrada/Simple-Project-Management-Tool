@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
 import { getMembers } from "@/app/services/memberService";
 import { getProjects } from "@/app/services/projectService";
-import { getTasks } from "@/app/services/taskService"; // added
+import { getTasks } from "@/app/services/taskService";
 
 export default function DashboardHome() {
   const [user, setUser] = useState({ username: "User" });
@@ -13,15 +13,19 @@ export default function DashboardHome() {
     projects: 0,
     tasks: 0,
     changeLogs: 0,
+    membersList: [],
   });
-  const [recentActivities, setRecentActivities] = useState([]);
+  const [recentActivities, setRecentActivities] = useState({
+    members: [],
+    projects: [],
+    tasks: [],
+  });
 
   useEffect(() => {
-    // Load user from localStorage
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
 
-    const fetchStats = async () => {
+    const fetchStatsAndActivities = async () => {
       try {
         const [membersRes, projectsRes, tasksRes] = await Promise.all([
           getMembers(),
@@ -29,57 +33,85 @@ export default function DashboardHome() {
           getTasks(),
         ]);
 
+        // Members
+        const memberActs = membersRes.data.data.slice(-5).map((m) => ({
+          id: `member-${m.id}`,
+          text: `${m.username} joined the team`,
+        }));
+
+        // Projects
+        const projectActs = projectsRes.data.data.slice(-5).map((p) => ({
+          id: `project-${p.id}`,
+          text: `Project "${p.name}" was created`,
+        }));
+
+        // Tasks
+        const taskActs = tasksRes.data.data.slice(-5).map((t) => ({
+          id: `task-${t.id}`,
+          text: `Task "${t.name}" was added to Project ID ${t.project_id}`,
+        }));
+
+        setRecentActivities({
+          members: memberActs,
+          projects: projectActs,
+          tasks: taskActs,
+        });
+
+        // Set stats dynamically
         setStats({
           members: membersRes.data.data.length,
           projects: projectsRes.data.data.length,
           tasks: tasksRes.data.data.length,
-          changeLogs: 5, // keep mock or fetch real if API exists
+          changeLogs: memberActs.length + projectActs.length + taskActs.length,
+          membersList: membersRes.data.data,
         });
-
-        setRecentActivities([
-          { id: 1, text: "Alice created Project Alpha" },
-          { id: 2, text: "Bob added Task 'Design UI'" },
-          { id: 3, text: "Charlie updated Project Beta" },
-        ]);
       } catch (err) {
         console.error(err);
       }
     };
 
-    fetchStats();
+    fetchStatsAndActivities();
   }, []);
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col space-y-6">
+      <div className="min-h-screen bg-gray-50 p-6 flex flex-col space-y-8">
         {/* Welcome */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900">
             Welcome, {user.username}!
           </h1>
           <p className="text-gray-600 mt-2">
-            Here's what's happening in your project management tool
+            This is a Simple Management Tool Dashboard
           </p>
         </div>
 
-        {/* Quick Stats */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="Members" value={stats.members} color="bg-blue-500" />
+          <StatCard
+            title="Members"
+            value={stats.members}
+            color="from-blue-500 to-blue-700"
+          />
           <StatCard
             title="Projects"
             value={stats.projects}
-            color="bg-green-500"
+            color="from-green-500 to-green-700"
           />
-          <StatCard title="Tasks" value={stats.tasks} color="bg-yellow-500" />
+          <StatCard
+            title="Tasks"
+            value={stats.tasks}
+            color="from-yellow-500 to-yellow-600"
+          />
           <StatCard
             title="Change Logs"
             value={stats.changeLogs}
-            color="bg-purple-500"
+            color="from-purple-500 to-purple-700"
           />
         </div>
 
         {/* Quick Actions */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 justify-center">
           <ActionButton
             label="Add Member"
             onClick={() => (window.location.href = "/dashboard/members/add")}
@@ -94,22 +126,98 @@ export default function DashboardHome() {
           />
         </div>
 
-        {/* Recent Activities */}
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h2 className="text-2xl font-semibold mb-4">Recent Activity</h2>
-          <ul className="space-y-2">
-            {recentActivities.map((act) => (
-              <li
-                key={act.id}
-                className="p-3 bg-gray-50 rounded hover:bg-gray-100 transition"
-              >
-                {act.text}
-              </li>
-            ))}
-            {recentActivities.length === 0 && (
-              <li className="text-gray-500">No recent activities</li>
+        {/* Main Grid: Activities & Team */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">
+              Recent Activity
+            </h2>
+
+            {recentActivities.members.length > 0 && (
+              <>
+                <h3 className="text-md font-medium text-gray-700 mb-2">
+                  Members
+                </h3>
+                <ul className="space-y-2 mb-4">
+                  {recentActivities.members.map((act) => (
+                    <li
+                      key={act.id}
+                      className="p-3 bg-gray-50 text-gray-800 rounded-xl border-l-4 border-blue-500 hover:bg-gray-100 transition"
+                    >
+                      {act.text}
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
-          </ul>
+
+            {recentActivities.projects.length > 0 && (
+              <>
+                <h3 className="text-md font-medium text-gray-700 mb-2">
+                  Projects
+                </h3>
+                <ul className="space-y-2 mb-4">
+                  {recentActivities.projects.map((act) => (
+                    <li
+                      key={act.id}
+                      className="p-3 bg-gray-50 text-gray-800 rounded-xl border-l-4 border-green-500 hover:bg-gray-100 transition"
+                    >
+                      {act.text}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {recentActivities.tasks.length > 0 && (
+              <>
+                <h3 className="text-md font-medium text-gray-700 mb-2">
+                  Tasks
+                </h3>
+                <ul className="space-y-2">
+                  {recentActivities.tasks.map((act) => (
+                    <li
+                      key={act.id}
+                      className="p-3 bg-gray-50 text-gray-800 rounded-xl border-l-4 border-yellow-500 hover:bg-gray-100 transition"
+                    >
+                      {act.text}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {recentActivities.members.length === 0 &&
+              recentActivities.projects.length === 0 &&
+              recentActivities.tasks.length === 0 && (
+                <p className="text-gray-500">No recent activities</p>
+              )}
+          </div>
+
+          {/* Team Members */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">
+              Team Members
+            </h2>
+            <ul className="flex flex-wrap gap-4">
+              {stats.membersList.length > 0 ? (
+                stats.membersList.map((member) => (
+                  <li key={member.id} className="flex flex-col items-center">
+                    <span className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center text-xl font-bold text-blue-700">
+                      {member.username
+                        ? member.username.charAt(0).toUpperCase()
+                        : "?"}
+                    </span>
+                    <span className="mt-2 text-gray-700 text-sm">
+                      {member.username}
+                    </span>
+                  </li>
+                ))
+              ) : (
+                <li className="text-gray-500">No members found.</li>
+              )}
+            </ul>
+          </div>
         </div>
       </div>
     </DashboardLayout>
@@ -119,7 +227,9 @@ export default function DashboardHome() {
 // Stats Card Component
 function StatCard({ title, value, color }) {
   return (
-    <div className={`rounded-2xl shadow p-6 text-white ${color}`}>
+    <div
+      className={`rounded-2xl shadow p-6 text-white bg-gradient-to-r ${color} transform hover:scale-105 transition flex flex-col items-center`}
+    >
       <h3 className="text-xl font-semibold">{title}</h3>
       <p className="text-3xl font-bold mt-2">{value}</p>
     </div>
