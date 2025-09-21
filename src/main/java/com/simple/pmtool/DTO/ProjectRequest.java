@@ -1,17 +1,20 @@
 package com.simple.pmtool.DTO;
 
+import java.util.List;
+
 public class ProjectRequest {
 
-    private String userId;
+    private String ownerId;
     private String name;
     private String description;
+    private List<String> assignedMemberIds;
 
     // Getters and setters
-    public String getUserId() {
-        return userId;
+    public String getOwnerId() {
+        return ownerId;
     }
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getName() {
@@ -28,12 +31,20 @@ public class ProjectRequest {
         this.description = description;
     }
 
+    public List<String> getAssignedMemberIds() {
+        return assignedMemberIds;
+    }
+    public void setAssignedMemberIds(List<String> assignedMemberIds) {
+        this.assignedMemberIds = assignedMemberIds;
+    }
+
     @Override
     public String toString() {
         return "ProjectRequest{" +
-                "userId='" + userId + '\'' +
+                "ownerId='" + ownerId + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
+                ", assignedMemberIds=" + assignedMemberIds +
                 '}';
     }
 }

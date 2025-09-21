@@ -42,7 +42,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             try {
                 userId = jwtUtil.extractUserId(jwt);
-                role = jwtUtil.extractRole(jwt); // 👈 NEW: extract role
+                role = jwtUtil.extractRole(jwt);
                 boolean valid = jwtUtil.validateToken(jwt, userId);
 
                 System.out.println("JWT received: " + jwt);

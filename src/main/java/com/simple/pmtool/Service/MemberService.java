@@ -91,4 +91,10 @@ public class MemberService {
             return false;
         }
     }
+
+    // Add this method
+    public Optional<Member> getMemberByUserId(String userId) {
+        return memberRepository.findByUserId(userId);
+    }
+
 }
