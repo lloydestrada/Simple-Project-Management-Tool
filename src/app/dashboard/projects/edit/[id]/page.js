@@ -1,37 +1,37 @@
 "use client";
 
-import { useState, useEffect, use } from "react"; // <-- import use
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
+import ProjectForm from "@/components/ProjectForm";
 import { getProject, updateProject } from "@/app/services/projectService";
 import { getMembers } from "@/app/services/memberService";
 
-export default function EditProjectPage({ params }) {
+export default function EditProjectPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params.id;
 
-  // Unwrap params Promise
-  const resolvedParams = use(params);
-  const { id } = resolvedParams;
-
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [userId, setUserId] = useState("");
+  const [initialData, setInitialData] = useState({});
   const [members, setMembers] = useState([]);
-  const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
         const res = await getProject(id);
         const data = res.data.data;
-        setName(data.name || "");
-        setDescription(data.description || "");
-        setUserId(data.user_id || "");
+
+        setInitialData({
+          name: data.name,
+          description: data.description,
+          ownerId: data.owner_id,
+          assignedMembers: data.assignedMembers
+            ? data.assignedMembers.map((m) => m.user_id)
+            : [],
+        });
       } catch (err) {
         console.error(err);
-        setMessage("Failed to load project.");
-        setIsError(true);
+        alert("Failed to load project.");
       }
     };
 
@@ -48,26 +48,24 @@ export default function EditProjectPage({ params }) {
     fetchMembers();
   }, [id]);
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
+  const handleUpdate = async (formData) => {
     try {
       const res = await updateProject(id, {
-        name,
-        description,
-        user_id: userId,
+        name: formData.name,
+        description: formData.description,
+        ownerId: formData.ownerId, 
+        assignedMemberIds: formData.assignedMembers,
       });
+
       if (res.data?.data) {
-        setMessage("Project updated successfully!");
-        setIsError(false);
-        setTimeout(() => router.push("/dashboard/projects"), 1000);
+        alert("Project updated successfully!");
+        router.push("/dashboard/projects");
       } else {
-        setMessage("Failed to update project.");
-        setIsError(true);
+        alert("Failed to update project.");
       }
     } catch (err) {
       console.error(err);
-      setMessage(err.response?.data?.message || "Error updating project");
-      setIsError(true);
+      alert(err.response?.data?.message || "Error updating project");
     }
   };
 
@@ -79,70 +77,11 @@ export default function EditProjectPage({ params }) {
             Edit Project
           </h1>
 
-          <form className="space-y-4" onSubmit={handleUpdate}>
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Project Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                rows={4}
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Owner (User ID)
-              </label>
-              <select
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              >
-                <option value="">Select a member</option>
-                {members.map((member) => (
-                  <option key={member.id} value={member.user_id}>
-                    {member.user_id} - {member.username}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
-            >
-              Update Project
-            </button>
-          </form>
-
-          {message && (
-            <div
-              className={`mt-6 p-3 rounded-lg text-center font-medium ${
-                isError
-                  ? "bg-red-100 text-red-700 border border-red-400"
-                  : "bg-green-100 text-green-700 border border-green-400"
-              }`}
-            >
-              {message}
-            </div>
-          )}
+          <ProjectForm
+            initialData={initialData}
+            onSubmit={handleUpdate}
+            members={members}
+          />
         </div>
 
         <div className="mt-4 text-center">

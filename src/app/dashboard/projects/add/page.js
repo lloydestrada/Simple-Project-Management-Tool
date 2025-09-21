@@ -5,49 +5,42 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useRouter } from "next/navigation";
 import { getMembers } from "@/app/services/memberService";
 import { createProject } from "@/app/services/projectService";
+import ProjectForm from "@/components/ProjectForm";
 
 export default function AddProjectPage() {
   const router = useRouter();
-
   const [members, setMembers] = useState([]);
-  const [userId, setUserId] = useState("");
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await getMembers(); // uses memberService
-        setMembers(res.data.data);
-        if (res.data.data.length > 0) setUserId(res.data.data[0].user_id);
+        const res = await getMembers();
+        setMembers(res.data.data || []);
       } catch (err) {
         console.error(err);
-        setMessage("Failed to load members.");
-        setIsError(true);
       }
     };
     fetchMembers();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
     try {
-      const res = await createProject({ userId, name, description });
+      const res = await createProject({
+        name: formData.name,
+        description: formData.description,
+        assignedMemberIds: formData.assignedMembers,
+      });
 
       if (res.data?.data) {
-        setMessage("Project added successfully!");
-        setIsError(false);
-        setTimeout(() => router.push("/dashboard/projects"), 1500);
+        // Navigate to projects page after success
+        router.push("/dashboard/projects");
+        return res.data.data; 
       } else {
-        setMessage("Failed to add project.");
-        setIsError(true);
+        throw new Error("Failed to add project");
       }
     } catch (err) {
       console.error(err);
-      setMessage(err.response?.data?.message || err.message);
-      setIsError(true);
+      throw err;
     }
   };
 
@@ -59,76 +52,14 @@ export default function AddProjectPage() {
             Add Project
           </h1>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* User ID select */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Owner (User ID)
-              </label>
-              <select
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              >
-                {members.map((member) => (
-                  <option key={member.id} value={member.user_id}>
-                    {member.user_id} - {member.username}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Project Name */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Project Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
-            >
-              Add Project
-            </button>
-          </form>
-
-          {/* Message Block */}
-          {message && (
-            <div
-              className={`mt-6 p-3 rounded-lg text-center font-medium ${
-                isError
-                  ? "bg-red-100 text-red-700 border border-red-400"
-                  : "bg-green-100 text-green-700 border border-green-400"
-              }`}
-            >
-              {message}
-            </div>
-          )}
+          {/* Use ProjectForm component */}
+          <ProjectForm
+            initialData={{}}
+            onSubmit={handleSubmit}
+            members={members}
+          />
         </div>
 
-        {/* Back button */}
         <div className="mt-4 text-center">
           <button
             onClick={() => router.push("/dashboard/projects")}
