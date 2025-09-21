@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -28,29 +26,26 @@ public class AuthController {
 
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    //Sign-up
+    // Sign-up
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody Member member) {
         try {
-            // Check User ID first
             if (memberRepository.findByUserId(member.getUserId()).isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("success", false, "message", "User ID already exists"));
             }
 
-            // Then check Username
             if (memberRepository.findByUsername(member.getUsername()).isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("success", false, "message", "Username already exists"));
             }
 
-            // Then check Email
             if (memberRepository.findByEmail(member.getEmail()).isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("success", false, "message", "Email already exists"));
             }
 
-            // Hash password and save member
+            // Hash password
             member.setPassword(passwordEncoder.encode(member.getPassword()));
             memberRepository.save(member);
 
@@ -58,7 +53,8 @@ public class AuthController {
                     "success", true,
                     "message", "Signup successful",
                     "user_id", member.getUserId(),
-                    "username", member.getUsername()
+                    "username", member.getUsername(),
+                    "role", member.getRole().name()
             ));
 
         } catch (Exception e) {
@@ -67,42 +63,36 @@ public class AuthController {
         }
     }
 
-    //Login
+    // Login
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
             String userId = loginRequest.getUserId();
             String rawPassword = loginRequest.getPassword();
 
-            System.out.println("Login attempt -> userId: " + userId + ", password: " + rawPassword);
-
             return memberRepository.findByUserId(userId)
                     .map(member -> {
-                        System.out.println("Found member -> " + member.getUserId() + ", encoded password: " + member.getPassword());
-
                         if (!passwordEncoder.matches(rawPassword, member.getPassword())) {
-                            System.out.println("Password mismatch!");
                             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                                     .body(Map.of("success", false, "message", "Invalid credentials"));
                         }
 
-                        // Generate JWT token
-                        String token = jwtUtil.generateToken(member.getUserId());
-                        System.out.println("Generated token: " + token);
+                        //Generate JWT with role
+                        String token = jwtUtil.generateToken(member.getUserId(), member.getRole().name());
 
                         return ResponseEntity.ok(Map.of(
                                 "success", true,
                                 "message", "Login successful",
                                 "token", token,
                                 "user_id", member.getUserId(),
-                                "username", member.getUsername()
+                                "username", member.getUsername(),
+                                "role", member.getRole().name()
                         ));
                     })
-                    .orElseGet(() -> {
-                        System.out.println("User not found in DB for userId: " + userId);
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body(Map.of("success", false, "message", "User not found"));
-                    });
+                    .orElseGet(() ->
+                            ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                    .body(Map.of("success", false, "message", "User not found"))
+                    );
 
         } catch (Exception e) {
             e.printStackTrace();

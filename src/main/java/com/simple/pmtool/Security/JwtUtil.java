@@ -7,11 +7,13 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Map;
+import java.util.HashMap;
 
 @Component
 public class JwtUtil {
 
-    private static final long EXPIRATION_TIME = 86400000; // 1 day
+    private static final long EXPIRATION_TIME = 86400000L * 5; // 5 days
 
     // 512-bit (64-byte) Base64 secret for HS512
     private static final String SECRET_BASE64 = "+wb8Y90ydoEA57TfdaR3BM7rwXpkkxwk6Wvg0f4HdR0vj/DSsxUgyDuDlbAAoUUBOAWskv+YmkCWOPTZyxdmhA==";
@@ -23,9 +25,13 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(decoded); // HS512 key
     }
 
-    // Generate JWT
-    public String generateToken(String userId) {
+    //  Generate JWT with userId + role
+    public String generateToken(String userId, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
@@ -33,7 +39,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Extract userId
+    // Extract userId (subject)
     public String extractUserId(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -41,6 +47,16 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    // Extract role from JWT claims
+    public String extractRole(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
     }
 
     // Validate JWT

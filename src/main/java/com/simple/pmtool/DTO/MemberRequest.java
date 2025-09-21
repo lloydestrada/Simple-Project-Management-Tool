@@ -5,6 +5,7 @@ public class MemberRequest {
     private String username;
     private String email;
     private String password;
+    private String role;
 
     // getters and setters
     public String getUser_id() {
@@ -37,6 +38,14 @@ public class MemberRequest {
         this.password = password;
     }
 
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
     @Override
     public String toString() {
         return "MemberRequest{" +
@@ -44,6 +53,7 @@ public class MemberRequest {
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
+                ", role='" + role + '\'' +
                 '}';
     }
 }

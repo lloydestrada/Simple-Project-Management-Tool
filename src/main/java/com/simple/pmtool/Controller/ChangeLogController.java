@@ -4,6 +4,7 @@ import com.simple.pmtool.DTO.ChangeLogRequest;
 import com.simple.pmtool.Model.ChangeLog;
 import com.simple.pmtool.Service.ChangeLogService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -19,16 +20,21 @@ public class ChangeLogController {
         this.changeLogService = changeLogService;
     }
 
+    // Anyone with a valid JWT (USER, ADMIN, SUPER_ADMIN) can view logs
+    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPER_ADMIN')")
     @GetMapping("/get_all_logs")
     public ResponseEntity<List<ChangeLog>> getAllLogs() {
         return ResponseEntity.ok(changeLogService.getAllLogs());
     }
 
+    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPER_ADMIN')")
     @GetMapping("/get_logs_by_task")
     public ResponseEntity<List<ChangeLog>> getLogsByTask(@RequestParam Long taskId) {
         return ResponseEntity.ok(changeLogService.getLogsByTask(taskId));
     }
 
+    // Create changelog (USER, ADMIN, SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPER_ADMIN')")
     @PostMapping("/create_changelog")
     public ResponseEntity<ChangeLog> createLog(@RequestBody ChangeLogRequest request) {
         String jwtUserId = null;
@@ -38,8 +44,6 @@ public class ChangeLogController {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             jwtUserId = principal != null ? principal.toString() : null;
         }
-
-        System.out.println("JWT userId in controller: " + jwtUserId);
 
         if (jwtUserId == null) {
             return ResponseEntity.status(403).build(); // explicit 403 if not authenticated
@@ -56,8 +60,8 @@ public class ChangeLogController {
         return ResponseEntity.ok(changeLogService.createLog(log));
     }
 
-
-
+    // Delete changelog (SUPER_ADMIN only)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/delete_changelog")
     public ResponseEntity<String> deleteLog(@RequestParam Long id) {
         try {

@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "members")
 public class Member {
-    //primary Key??
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,11 +22,21 @@ public class Member {
     @Column(nullable = false)
     private String password;
 
-    // Getters and Setters
+    @Enumerated(EnumType.STRING) // store role as string ("USER", "ADMIN", "SUPER_ADMIN")
+    @Column(nullable = false)
+    private Role role = Role.USER; // default value
+
+    //Role
+    public enum Role {
+        USER,
+        ADMIN,
+        SUPER_ADMIN
+    }
+
+    // Getters & Setters
     public Long getId() {
         return id;
     }
-
     public void setId(Long id) {
         this.id = id;
     }
@@ -41,7 +51,6 @@ public class Member {
     public String getUsername() {
         return username;
     }
-
     public void setUsername(String username) {
         this.username = username;
     }
@@ -49,7 +58,6 @@ public class Member {
     public String getEmail() {
         return email;
     }
-
     public void setEmail(String email) {
         this.email = email;
     }
@@ -57,9 +65,15 @@ public class Member {
     public String getPassword() {
         return password;
     }
-
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     @Override
@@ -69,7 +83,7 @@ public class Member {
                 ", userId='" + userId + '\'' +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
+                ", role=" + role +
                 '}';
     }
 }

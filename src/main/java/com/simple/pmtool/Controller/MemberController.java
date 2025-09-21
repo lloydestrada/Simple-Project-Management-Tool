@@ -6,6 +6,8 @@ import com.simple.pmtool.DTO.MemberRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +24,8 @@ public class MemberController {
 
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    //create member
+    // Create member (only ADMIN/SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping("/create_member")
     public ResponseEntity<Object> createMember(@RequestBody MemberRequest request) {
         try {
@@ -31,27 +34,29 @@ public class MemberController {
             member.setUsername(request.getUsername().trim());
             member.setEmail(request.getEmail().trim().toLowerCase());
             member.setPassword(passwordEncoder.encode(request.getPassword()));
+            member.setRole(Member.Role.valueOf(request.getRole() != null ? request.getRole().trim() : "USER"));
 
-            Member savedMember = memberService.createMember(member); // <-- throws RuntimeException for duplicates
+            Member savedMember = memberService.createMember(member);
 
             Map<String, Object> response = Map.of(
                     "data", Map.of(
                             "id", savedMember.getId(),
                             "user_id", savedMember.getUserId(),
                             "username", savedMember.getUsername(),
-                            "email", savedMember.getEmail()
+                            "email", savedMember.getEmail(),
+                            "role", savedMember.getRole().name()
                     )
             );
 
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); // <-- returns 400, not 500
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-
-    // Get all members
+    // Get all members (only ADMIN/SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping("/get_all_member")
     public ResponseEntity<Object> getAllMembers() {
         List<Member> members = memberService.getAllMembers();
@@ -62,13 +67,16 @@ public class MemberController {
             map.put("user_id", m.getUserId());
             map.put("username", m.getUsername());
             map.put("email", m.getEmail());
+            map.put("role", m.getRole().name());
             return map;
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(Map.of("data", memberData));
     }
 
-    // Get member by id
+    // Get a single member
+    // ADMIN/SUPER_ADMIN can get any member, USER can only get self
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN') or #id.toString() == authentication.name")
     @GetMapping("/get_member")
     public ResponseEntity<Map<String, Map<String, Object>>> getMember(@RequestParam Long id) {
         return memberService.getMemberById(id)
@@ -78,47 +86,56 @@ public class MemberController {
                     memberData.put("user_id", m.getUserId());
                     memberData.put("username", m.getUsername());
                     memberData.put("email", m.getEmail());
-
+                    memberData.put("role", m.getRole());
                     return ResponseEntity.ok(Map.of("data", memberData));
                 })
                 .orElseGet(() -> ResponseEntity.ok(Map.of("data", new HashMap<>())));
     }
 
-
-    //update member
+    // Update a member
+// ADMIN/SUPER_ADMIN can update any member, USER can only update self
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN') or #id == principal.id")
     @PatchMapping("/update_member")
     public ResponseEntity<Object> updateMember(
             @RequestParam Long id,
             @RequestBody Map<String, String> requestBody) {
 
+        Optional<Member> memberOpt = memberService.getMemberById(id);
+
+        if (memberOpt.isEmpty()) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("error", "Member not found with id " + id));
+        }
+
+        Member member = memberOpt.get();
+
         try {
-            Optional<Member> memberOpt = memberService.getMemberById(id);
-            if (memberOpt.isEmpty()) {
-                return ResponseEntity.ok(Map.of("data", Map.of())); // empty if not found
-            }
-
-            Member member = memberOpt.get();
-
+            // Update password if provided
             String oldPassword = requestBody.get("old_password");
             String newPassword = requestBody.get("new_password");
-            String email = requestBody.get("email");
-            String userId = requestBody.get("user_id");
-            String username = requestBody.get("username");
-
-            // Verify old password if changing password
             if (oldPassword != null && newPassword != null) {
                 if (!passwordEncoder.matches(oldPassword, member.getPassword())) {
                     return ResponseEntity.status(401)
                             .body(Map.of("error", "Old password does not match"));
                 }
-                // Hash new password before saving
                 member.setPassword(passwordEncoder.encode(newPassword));
             }
 
-            // Apply updates
+            // Update other fields
+            String userId = requestBody.get("user_id");
+            String username = requestBody.get("username");
+            String email = requestBody.get("email");
+            String role = requestBody.get("role");
+
             if (userId != null) member.setUserId(userId.trim());
             if (username != null) member.setUsername(username.trim());
             if (email != null) member.setEmail(email.trim().toLowerCase());
+
+            // Only allow ADMIN/SUPER_ADMIN to change roles
+            if (role != null && (member.getRole() != Member.Role.USER
+                    || hasRole("ADMIN") || hasRole("SUPER_ADMIN"))) {
+                member.setRole(Member.Role.valueOf(role.trim()));
+            }
 
             Member updatedMember = memberService.updateMember(id, member);
 
@@ -127,17 +144,29 @@ public class MemberController {
                             "id", updatedMember.getId(),
                             "user_id", updatedMember.getUserId(),
                             "username", updatedMember.getUsername(),
-                            "email", updatedMember.getEmail()
+                            "email", updatedMember.getEmail(),
+                            "role", updatedMember.getRole().name()
                     )
             );
 
             return ResponseEntity.ok(response);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
-    //delete member
+    // Utility method to check role
+    private boolean hasRole(String role) {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
+    }
+
+
+    // Delete member (only SUPER_ADMIN)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/delete_member")
     public ResponseEntity<Object> deleteMember(@RequestParam Long id) {
         boolean deleted = memberService.deleteMember(id);

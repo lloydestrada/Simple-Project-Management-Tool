@@ -6,6 +6,7 @@ import com.simple.pmtool.Service.ProjectService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -18,7 +19,8 @@ public class ProjectController {
     @Autowired
     private ProjectService projectService;
 
-    //Get all projects
+    // Get all projects (any logged-in user)
+    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPER_ADMIN')")
     @GetMapping("/get_all_project")
     public ResponseEntity<?> getAllProjects() {
         List<Map<String, Object>> projects = projectService.getAllProjects();
@@ -28,7 +30,8 @@ public class ProjectController {
         ));
     }
 
-    //Get project by ID
+    // Get project by ID (any logged-in user)
+    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPER_ADMIN')")
     @GetMapping("/get_project")
     public ResponseEntity<?> getProject(@RequestParam Long id) {
         return projectService.getProjectById(id)
@@ -42,7 +45,8 @@ public class ProjectController {
                 )));
     }
 
-    //Create project
+    // Create project (USER, ADMIN, SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('USER','ADMIN','SUPER_ADMIN')")
     @PostMapping("/create_project")
     public ResponseEntity<?> createProject(@RequestBody ProjectRequest req) {
         Project project = projectService.addProject(req);
@@ -52,7 +56,8 @@ public class ProjectController {
         ));
     }
 
-    //Patch project (partial update)
+    // Patch project (only ADMIN and SUPER_ADMIN)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PatchMapping("/patch_project")
     public ResponseEntity<?> patchProject(@RequestParam Long id, @RequestBody ProjectRequest req) {
         return projectService.updateProject(id, req)
@@ -66,7 +71,8 @@ public class ProjectController {
                 )));
     }
 
-    //Delete project
+    // Delete project (only SUPER_ADMIN)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @DeleteMapping("/delete_project")
     public ResponseEntity<?> deleteProject(@RequestParam Long id) {
         if (projectService.deleteProject(id)) {
