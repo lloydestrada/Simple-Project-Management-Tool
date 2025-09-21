@@ -1,4 +1,4 @@
-//Service
+//Project
 import api from "@/app/lib/axios";
 
 export const getProjects = () => api.get("/test02/get_all_project");
