@@ -1,62 +1,94 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import MemberForm from "@/components/MemberForm";
 import { getMember, updateMember } from "@/app/services/memberService";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function UpdateMemberPage({ params }) {
+export default function UpdateMemberPage() {
   const router = useRouter();
-
-  // Unwrap params Promise
-  const { id } = use(params);
-
-  const [formData, setFormData] = useState({
-    user_id: "",
-    username: "",
-    email: "",
-    old_password: "",
-    new_password: "",
-  });
+  const params = useParams();
+  const id = params?.id; // numeric ID in route
+  const [initialData, setInitialData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // Fetch member data
   useEffect(() => {
-    const fetchData = async () => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser({
+        ...user,
+        role: user.role?.toUpperCase(),
+        user_id: user.user_id || user.id,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!id) {
+      setMessage("Invalid member ID.");
+      setIsError(true);
+      setLoading(false);
+      return;
+    }
+
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
+      setMessage("Invalid member ID.");
+      setIsError(true);
+      setLoading(false);
+      return;
+    }
+
+    const fetchMember = async () => {
       try {
-        const res = await getMember(id);
+        const res = await getMember(numericId);
         if (res.data?.data) {
           const data = res.data.data;
-          setFormData({
+          setInitialData({
             user_id: data.user_id || "",
             username: data.username || "",
             email: data.email || "",
-            old_password: data.password || "",
-            new_password: "",
+            role: data.role || "USER",
           });
+        } else {
+          setMessage("Member not found.");
+          setIsError(true);
         }
       } catch (err) {
         console.error(err);
-        setMessage("Failed to fetch member data.");
+        setMessage(err.response?.data?.error || "Failed to fetch member data.");
         setIsError(true);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchData();
+
+    fetchMember();
   }, [id]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
     try {
-      const res = await updateMember(id, formData);
+      let payload = {
+        user_id: formData.user_id,
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+        old_password: formData.old_password || undefined,
+        new_password: formData.new_password || undefined,
+      };
+
+      const numericId = Number(id);
+      const res = await updateMember(numericId, payload);
+
       if (res.data?.data) {
         setMessage("Member updated successfully!");
         setIsError(false);
-        setTimeout(() => router.push("/dashboard/members"), 1000);
+        setTimeout(() => router.push("/dashboard/members"), 1500);
       } else {
         setMessage("Failed to update member.");
         setIsError(true);
@@ -68,6 +100,9 @@ export default function UpdateMemberPage({ params }) {
     }
   };
 
+  if (loading)
+    return <p className="text-center mt-4">Loading member data...</p>;
+
   return (
     <DashboardLayout>
       <div className="max-w-md mx-auto">
@@ -76,86 +111,10 @@ export default function UpdateMemberPage({ params }) {
             Update Member
           </h1>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                User ID
-              </label>
-              <input
-                type="text"
-                name="user_id"
-                value={formData.user_id}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
+          {initialData && currentUser && (
+            <MemberForm initialData={initialData} onSubmit={handleSubmit} />
+          )}
 
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Old Password
-              </label>
-              <input
-                type="password"
-                name="old_password"
-                value={formData.old_password}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                New Password
-              </label>
-              <input
-                type="password"
-                name="new_password"
-                value={formData.new_password}
-                onChange={handleChange}
-                placeholder="Enter new password"
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
-            >
-              Update Member
-            </button>
-          </form>
-
-          {/* Message Block */}
           {message && (
             <div
               className={`mt-6 p-3 rounded-lg text-center font-medium ${
@@ -169,7 +128,6 @@ export default function UpdateMemberPage({ params }) {
           )}
         </div>
 
-        {/* Back Button */}
         <div className="mt-4 text-center">
           <button
             onClick={() => router.push("/dashboard/members")}

@@ -25,7 +25,7 @@ export default function SignupPage() {
         router.push("/");
       }
     } catch (error) {
-      // Check if backend sent a message
+      //checking if the backend is sending message
       if (
         error.response &&
         error.response.data &&
@@ -121,7 +121,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        <p className="text-center mt-4">
+        <p className="text-center mt-4 text-gray-800">
           Already have an account?{" "}
           <button
             className="text-blue-600 font-semibold hover:underline"

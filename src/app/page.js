@@ -21,7 +21,7 @@ export default function LoginPage() {
 
       if (data.success) {
         localStorage.setItem("token", data.token); // Store JWT
-        router.push("/dashboard"); // Redirect to dashboard
+        router.push("/dashboard"); 
       }
     } catch (error) {
       console.error(error);
@@ -89,7 +89,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <p className="text-center mt-4">
+        <p className="text-center mt-4 text-gray-800">
           Don&apos;t have an account?{" "}
           <button
             className="text-blue-600 font-semibold hover:underline"

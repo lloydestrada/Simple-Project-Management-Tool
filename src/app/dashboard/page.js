@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getMembers } from "@/app/services/memberService";
 import { getProjects } from "@/app/services/projectService";
 import { getTasks } from "@/app/services/taskService";
+import { isSuperUser } from "@/lib/auth";
 
 export default function DashboardHome() {
   const [user, setUser] = useState({ username: "User" });
@@ -20,10 +21,15 @@ export default function DashboardHome() {
     projects: [],
     tasks: [],
   });
+  const [superUser, setSuperUser] = useState(false);
 
   useEffect(() => {
+    // Client-side only: get stored user
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
+
+    // Check if current user is superuser
+    setSuperUser(isSuperUser());
 
     const fetchStatsAndActivities = async () => {
       try {
@@ -33,19 +39,17 @@ export default function DashboardHome() {
           getTasks(),
         ]);
 
-        // Members
+        // Prepare recent activities
         const memberActs = membersRes.data.data.slice(-5).map((m) => ({
           id: `member-${m.id}`,
           text: `${m.username} joined the team`,
         }));
 
-        // Projects
         const projectActs = projectsRes.data.data.slice(-5).map((p) => ({
           id: `project-${p.id}`,
           text: `Project "${p.name}" was created`,
         }));
 
-        // Tasks
         const taskActs = tasksRes.data.data.slice(-5).map((t) => ({
           id: `task-${t.id}`,
           text: `Task "${t.name}" was added to Project ID ${t.project_id}`,
@@ -88,34 +92,22 @@ export default function DashboardHome() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Members"
-            value={stats.members}
-            color="from-blue-500 to-blue-700"
-          />
-          <StatCard
-            title="Projects"
-            value={stats.projects}
-            color="from-green-500 to-green-700"
-          />
-          <StatCard
-            title="Tasks"
-            value={stats.tasks}
-            color="from-yellow-500 to-yellow-600"
-          />
-          <StatCard
-            title="Change Logs"
-            value={stats.changeLogs}
-            color="from-purple-500 to-purple-700"
-          />
+          <StatCard title="Members" value={stats.members} color="from-blue-500 to-blue-700" />
+          <StatCard title="Projects" value={stats.projects} color="from-green-500 to-green-700" />
+          <StatCard title="Tasks" value={stats.tasks} color="from-yellow-500 to-yellow-600" />
+          {superUser && (
+            <StatCard title="Change Logs" value={stats.changeLogs} color="from-purple-500 to-purple-700" />
+          )}
         </div>
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-4 justify-center">
-          <ActionButton
-            label="Add Member"
-            onClick={() => (window.location.href = "/dashboard/members/add")}
-          />
+          {superUser && (
+            <ActionButton
+              label="Add Member"
+              onClick={() => (window.location.href = "/dashboard/members/add")}
+            />
+          )}
           <ActionButton
             label="Add Project"
             onClick={() => (window.location.href = "/dashboard/projects/add")}
@@ -129,15 +121,11 @@ export default function DashboardHome() {
         {/* Main Grid: Activities & Team */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">
-              Recent Activity
-            </h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Recent Activity</h2>
 
             {recentActivities.members.length > 0 && (
               <>
-                <h3 className="text-md font-medium text-gray-700 mb-2">
-                  Members
-                </h3>
+                <h3 className="text-md font-medium text-gray-700 mb-2">Members</h3>
                 <ul className="space-y-2 mb-4">
                   {recentActivities.members.map((act) => (
                     <li
@@ -153,9 +141,7 @@ export default function DashboardHome() {
 
             {recentActivities.projects.length > 0 && (
               <>
-                <h3 className="text-md font-medium text-gray-700 mb-2">
-                  Projects
-                </h3>
+                <h3 className="text-md font-medium text-gray-700 mb-2">Projects</h3>
                 <ul className="space-y-2 mb-4">
                   {recentActivities.projects.map((act) => (
                     <li
@@ -171,9 +157,7 @@ export default function DashboardHome() {
 
             {recentActivities.tasks.length > 0 && (
               <>
-                <h3 className="text-md font-medium text-gray-700 mb-2">
-                  Tasks
-                </h3>
+                <h3 className="text-md font-medium text-gray-700 mb-2">Tasks</h3>
                 <ul className="space-y-2">
                   {recentActivities.tasks.map((act) => (
                     <li
@@ -196,21 +180,15 @@ export default function DashboardHome() {
 
           {/* Team Members */}
           <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">
-              Team Members
-            </h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Team Members</h2>
             <ul className="flex flex-wrap gap-4">
               {stats.membersList.length > 0 ? (
                 stats.membersList.map((member) => (
                   <li key={member.id} className="flex flex-col items-center">
                     <span className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center text-xl font-bold text-blue-700">
-                      {member.username
-                        ? member.username.charAt(0).toUpperCase()
-                        : "?"}
+                      {member.username ? member.username.charAt(0).toUpperCase() : "?"}
                     </span>
-                    <span className="mt-2 text-gray-700 text-sm">
-                      {member.username}
-                    </span>
+                    <span className="mt-2 text-gray-700 text-sm">{member.username}</span>
                   </li>
                 ))
               ) : (

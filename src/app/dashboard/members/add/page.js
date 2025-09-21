@@ -1,35 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useRouter } from "next/navigation";
+import MemberForm from "@/components/MemberForm";
 import { createMember } from "@/app/services/memberService";
+import { useState } from "react";
 
 export default function AddMemberPage() {
   const router = useRouter();
-
-  // Form state
-  const [formData, setFormData] = useState({
-    user_id: "",
-    username: "",
-    email: "",
-    password: "",
-  });
-
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
-  // Handle input changes
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
     try {
       const res = await createMember(formData);
-
       if (res.data?.data) {
         setMessage("Member added successfully!");
         setIsError(false);
@@ -53,40 +37,8 @@ export default function AddMemberPage() {
             Add Member
           </h1>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {["user_id", "username", "email", "password"].map((field) => (
-              <div key={field}>
-                <label className="block mb-1 font-medium text-gray-700">
-                  {field
-                    .replace("_", " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())}
-                </label>
-                <input
-                  type={
-                    field === "password"
-                      ? "password"
-                      : field === "email"
-                      ? "email"
-                      : "text"
-                  }
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                  required
-                />
-              </div>
-            ))}
+          <MemberForm onSubmit={handleSubmit} />
 
-            <button
-              type="submit"
-              className="w-full py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
-            >
-              Add Member
-            </button>
-          </form>
-
-          {/* Message Block */}
           {message && (
             <div
               className={`mt-6 p-3 rounded-lg text-center font-medium ${
@@ -100,7 +52,6 @@ export default function AddMemberPage() {
           )}
         </div>
 
-        {/* Back button */}
         <div className="mt-4 text-center">
           <button
             onClick={() => router.push("/dashboard/members")}
