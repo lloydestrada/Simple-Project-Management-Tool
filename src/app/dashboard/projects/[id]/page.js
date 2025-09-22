@@ -88,18 +88,8 @@ export default function ViewProjectPage() {
   if (!project) return <p className="text-black">Project not found.</p>;
 
   // Filter for USER role: show only if user is assigned
-  if (
-    currentUser?.role === "USER" &&
-    !project.assignedMembers.some(
-      (m) => String(m.user_id) === String(currentUser.user_id)
-    )
-  ) {
-    return (
-      <DashboardLayout>
-        <p className="text-black">You are not assigned to this project.</p>
-      </DashboardLayout>
-    );
-  }
+
+
 
   return (
     <DashboardLayout>
