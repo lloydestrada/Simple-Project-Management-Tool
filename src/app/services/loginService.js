@@ -6,7 +6,7 @@ export const login = async (credentials) => {
   if (res.data.success) {
     localStorage.setItem("token", res.data.token);
 
-    // Store user (username)
+
     localStorage.setItem(
       "user",
       JSON.stringify({
