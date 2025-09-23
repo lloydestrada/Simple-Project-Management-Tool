@@ -40,8 +40,7 @@ function DataTable({ columns, data, currentUser, onEdit, onDelete }) {
                 ))}
                 <td className="px-6 py-4 flex gap-2">
                   {/* Only show actions for ADMIN or SUPER_ADMIN */}
-                  {(currentUser?.role === "SUPER_ADMIN" ||
-                    currentUser?.role === "ADMIN") && (
+                  {(currentUser?.role === "SUPER_ADMIN" || currentUser?.role === "ADMIN") && (
                     <>
                       <button
                         onClick={() => onEdit(item)}

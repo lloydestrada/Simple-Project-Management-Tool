@@ -2,9 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/lib/auth";
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser({
+        ...user,
+        role: user.role?.toUpperCase(),
+      });
+    }
+  }, []);
 
   const handleLogout = () => {
     router.push("/"); // Redirect to login page
@@ -18,21 +31,39 @@ export default function DashboardLayout({ children }) {
         <div>
           <div className="text-3xl font-bold p-6 text-cyan-500">PMT</div>
           <nav className="flex flex-col p-4 space-y-2">
-            <Link href="/dashboard" className="p-2 rounded hover:bg-gray-700 font-medium">
+            <Link
+              href="/dashboard"
+              className="p-2 rounded hover:bg-gray-700 font-medium"
+            >
               Home
             </Link>
-            <Link href="/dashboard/members" className="p-2 rounded hover:bg-gray-700 font-medium">
+            <Link
+              href="/dashboard/members"
+              className="p-2 rounded hover:bg-gray-700 font-medium"
+            >
               Members
             </Link>
-            <Link href="/dashboard/projects" className="p-2 rounded hover:bg-gray-700 font-medium">
+            <Link
+              href="/dashboard/projects"
+              className="p-2 rounded hover:bg-gray-700 font-medium"
+            >
               Projects
             </Link>
-            <Link href="/dashboard/tasks" className="p-2 rounded hover:bg-gray-700 font-medium">
+            <Link
+              href="/dashboard/tasks"
+              className="p-2 rounded hover:bg-gray-700 font-medium"
+            >
               Tasks
             </Link>
-            <Link href="/dashboard/change-logs" className="p-2 rounded hover:bg-gray-700 font-medium">
-              Change Logs
-            </Link>
+            {currentUser &&
+              ["ADMIN", "SUPER_ADMIN"].includes(currentUser.role) && (
+                <Link
+                  href="/dashboard/change-logs"
+                  className="p-2 rounded hover:bg-gray-700 font-medium"
+                >
+                  Change Logs
+                </Link>
+              )}
           </nav>
         </div>
 

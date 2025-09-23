@@ -8,9 +8,7 @@ export default function MemberForm({ initialData = {}, onSubmit }) {
     user_id: "",
     username: "",
     email: "",
-    password: "",
-    old_password: "",
-    new_password: "",
+    password: "", // optional: only for admin reset
     role: "USER",
     ...initialData,
   });
@@ -21,10 +19,13 @@ export default function MemberForm({ initialData = {}, onSubmit }) {
 
   useEffect(() => {
     const user = getCurrentUser();
-    setCurrentUser({
-      ...user,
-      user_id: user.user_id || user.id,
-    });
+    if (user) {
+      setCurrentUser({
+        ...user,
+        user_id: user.user_id || user.id,
+        role: user.role?.toUpperCase(),
+      });
+    }
   }, []);
 
   const handleChange = (e) => {
@@ -33,10 +34,20 @@ export default function MemberForm({ initialData = {}, onSubmit }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const payload = {
+      user_id: formData.user_id,
+      username: formData.username,
+      email: formData.email,
+      role: formData.role,
+      password: formData.password || undefined, // optional password reset
+    };
+
     try {
-      await onSubmit(formData);
+      await onSubmit(payload);
       setMessage("Operation successful!");
       setIsError(false);
+      setFormData({ ...formData, password: "" }); // clear password field
     } catch (err) {
       console.error(err);
       setMessage(err.response?.data?.error || err.message);
@@ -44,76 +55,48 @@ export default function MemberForm({ initialData = {}, onSubmit }) {
     }
   };
 
-  const isUpdatingOwnAccount =
-    initialData?.user_id && currentUser?.user_id === initialData.user_id;
+  // Only show form for ADMIN/SUPER_ADMIN
+  if (!currentUser || !["ADMIN", "SUPER_ADMIN"].includes(currentUser.role)) {
+    return (
+      <p className="text-center text-gray-500">
+        You cannot update this member.
+      </p>
+    );
+  }
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      {isUpdatingOwnAccount ? (
-        <>
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">
-              Current Password
-            </label>
-            <input
-              type="password"
-              name="old_password"
-              value={formData.old_password}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">
-              New Password
-            </label>
-            <input
-              type="password"
-              name="new_password"
-              value={formData.new_password}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-            />
-          </div>
-        </>
-      ) : (
-        <>
-          {["user_id", "username", "email", "password"].map((field) => (
-            <div key={field}>
-              <label className="block mb-1 font-medium text-gray-700">
-                {field
-                  .replace("_", " ")
-                  .replace(/\b\w/g, (c) => c.toUpperCase())}
-              </label>
-              <input
-                type={field === "password" ? "password" : "text"}
-                name={field}
-                value={formData[field]}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-                required={!initialData[field]}
-              />
-            </div>
-          ))}
+      {["user_id", "username", "email", "password"].map((field) => (
+        <div key={field}>
+          <label className="block mb-1 font-medium text-gray-700">
+            {field.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+          </label>
+          <input
+            type={field === "password" ? "password" : "text"}
+            name={field}
+            value={formData[field]}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
+            required={!initialData[field] && field !== "password"}
+          />
+        </div>
+      ))}
 
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">Role</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
-            >
-              <option value="USER">USER</option>
-              {currentUser?.role === "SUPER_ADMIN" && (
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-              )}
-              <option value="ADMIN">ADMIN</option>
-            </select>
-          </div>
-        </>
-      )}
+      <div>
+        <label className="block mb-1 font-medium text-gray-700">Role</label>
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-gray-50 text-gray-900"
+        >
+          <option value="USER">USER</option>
+          {currentUser?.role === "SUPER_ADMIN" && (
+            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+          )}
+          <option value="ADMIN">ADMIN</option>
+        </select>
+      </div>
 
       <button
         type="submit"

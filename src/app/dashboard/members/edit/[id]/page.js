@@ -10,7 +10,7 @@ import { getCurrentUser } from "@/lib/auth";
 export default function UpdateMemberPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params?.id; // numeric ID in route
+  const id = params?.id;
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -73,17 +73,8 @@ export default function UpdateMemberPage() {
 
   const handleSubmit = async (formData) => {
     try {
-      let payload = {
-        user_id: formData.user_id,
-        username: formData.username,
-        email: formData.email,
-        role: formData.role,
-        old_password: formData.old_password || undefined,
-        new_password: formData.new_password || undefined,
-      };
-
       const numericId = Number(id);
-      const res = await updateMember(numericId, payload);
+      const res = await updateMember(numericId, formData);
 
       if (res.data?.data) {
         setMessage("Member updated successfully!");
