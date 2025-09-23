@@ -3,33 +3,34 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
+import TaskForm from "@/components/TaskForm";
 import { createTask } from "@/app/services/taskService";
 import { getProjects } from "@/app/services/projectService";
+
+// Initial form state (static)
+const INITIAL_FORM = {
+  project_id: "",
+  name: "",
+  status: "PENDING",
+  contents: "",
+};
 
 export default function AddTaskPage() {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
-  const [form, setForm] = useState({
-    project_id: "",
-    name: "",
-    status: "PENDING",
-    contents: "",
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState(""); // "success" or "error"
+  const [messageType, setMessageType] = useState("");
 
+  // Fetch projects once on mount
   useEffect(() => {
     getProjects()
-      .then((res) => setProjects(res.data.data))
+      .then((res) => setProjects(res.data.data || []))
       .catch(() => {
         setMessage("Failed to load projects.");
         setMessageType("error");
       });
-  }, []);
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  }, []); // ✅ empty dependency array
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,90 +64,15 @@ export default function AddTaskPage() {
             </p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Project Select */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Project
-              </label>
-              <select
-                name="project_id"
-                value={form.project_id}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-                required
-              >
-                <option value="">-- Select Project --</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Task Name */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Task Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-                required
-              />
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Status
-              </label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-              >
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-              </select>
-            </div>
-
-            {/* Contents */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Contents
-              </label>
-              <textarea
-                name="contents"
-                value={form.contents}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/tasks")}
-                className="w-1/2 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-1/2 bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition"
-              >
-                Save Task
-              </button>
-            </div>
-          </form>
+          {/* Use the reusable TaskForm component */}
+          <TaskForm
+            form={form}
+            setForm={setForm}
+            projects={projects}
+            onSubmit={handleSubmit}
+            onCancel={() => router.push("/dashboard/tasks")}
+            submitLabel="Save Task"
+          />
         </div>
       </div>
     </DashboardLayout>

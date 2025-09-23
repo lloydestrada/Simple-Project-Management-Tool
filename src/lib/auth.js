@@ -1,7 +1,6 @@
 "use client";
 import { jwtDecode } from "jwt-decode";
 
-
 export function getCurrentUser() {
   if (typeof window === "undefined") return null; // SSR safe
   const token = localStorage.getItem("token");
@@ -10,6 +9,7 @@ export function getCurrentUser() {
   try {
     const decoded = jwtDecode(token);
     return {
+      user_id: decoded.user_id || decoded.id,
       username: decoded.username,
       role: decoded.role,
     };

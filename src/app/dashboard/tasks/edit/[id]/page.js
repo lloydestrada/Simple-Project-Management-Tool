@@ -1,54 +1,47 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
+import TaskForm from "@/components/TaskForm";
 import { getTask, updateTask } from "@/app/services/taskService";
 import { getProjects } from "@/app/services/projectService";
 
-export default function EditTaskPage({ params }) {
+export default function EditTaskPage() {
   const router = useRouter();
-  const resolvedParams = use(params); // unwrap the Promise
-  const taskId = resolvedParams.id;
+  const params = useParams();
+  const taskId = params.id;
 
   const [projects, setProjects] = useState([]);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
   const [form, setForm] = useState({
     project_id: "",
     name: "",
     status: "PENDING",
     contents: "",
   });
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
 
   useEffect(() => {
-    // Fetch all projects
+    // Fetch projects
     getProjects()
-      .then((res) => {
-        const projectList = Array.isArray(res.data)
-          ? res.data
-          : res.data.data || [];
-        setProjects(projectList);
-      })
+      .then((res) => setProjects(res.data.data || []))
       .catch(() => {
         setMessage("Failed to load projects.");
         setMessageType("error");
       });
 
-    // Fetch the task by id
+    // Fetch task by ID
     if (taskId) {
       getTask(taskId)
         .then((res) => {
           if (res.data.status === "success") {
-            const taskData = res.data.data;
+            const task = res.data.data;
             setForm({
-              name: taskData.name || "",
-              status: taskData.status || "PENDING",
-              contents: taskData.contents || "",
-              // Force project_id to string for <select>
-              project_id: taskData.project?.id
-                ? String(taskData.project.id)
-                : "",
+              project_id: task.project?.id ? String(task.project.id) : "",
+              name: task.name || "",
+              status: task.status || "PENDING",
+              contents: task.contents || "",
             });
           } else {
             setMessage("Task not found.");
@@ -62,14 +55,9 @@ export default function EditTaskPage({ params }) {
     }
   }, [taskId]);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
     try {
-      await updateTask(taskId, form);
+      await updateTask(taskId, formData);
       setMessage("Task updated successfully!");
       setMessageType("success");
       setTimeout(() => router.push("/dashboard/tasks"), 1000);
@@ -82,9 +70,11 @@ export default function EditTaskPage({ params }) {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-100 py-10">
+      <div className="min-h-screen py-10 bg-gray-100">
         <div className="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-          <h1 className="text-2xl font-bold mb-4 text-gray-900">Edit Task</h1>
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 text-center">
+            Edit Task
+          </h1>
 
           {message && (
             <p
@@ -96,90 +86,17 @@ export default function EditTaskPage({ params }) {
             </p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Project Select */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Project
-              </label>
-              <select
-                name="project_id"
-                value={form.project_id}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-                required
-              >
-                <option value="">-- Select Project --</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Task Name */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Task Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-                required
-              />
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Status
-              </label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-              >
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-              </select>
-            </div>
-
-            {/* Contents */}
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Contents
-              </label>
-              <textarea
-                name="contents"
-                value={form.contents}
-                onChange={handleChange}
-                className="w-full border p-2 rounded text-gray-900 bg-white focus:ring focus:ring-cyan-300"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => router.push("/dashboard/tasks")}
-                className="w-1/2 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-1/2 bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition"
-              >
-                Update Task
-              </button>
-            </div>
-          </form>
+          <TaskForm
+            form={form}
+            setForm={setForm}
+            projects={projects}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(form);
+            }}
+            onCancel={() => router.push("/dashboard/tasks")}
+            submitLabel="Update Task"
+          />
         </div>
       </div>
     </DashboardLayout>
