@@ -93,8 +93,8 @@ public class MemberController {
     }
 
     // Update a member
-// ADMIN/SUPER_ADMIN can update any member, USER can only update self
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN') or #id == principal.id")
+    // ADMIN/SUPER_ADMIN can update any member
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PatchMapping("/update_member")
     public ResponseEntity<Object> updateMember(
             @RequestParam Long id,
@@ -110,31 +110,23 @@ public class MemberController {
         Member member = memberOpt.get();
 
         try {
-            // Update password if provided
-            String oldPassword = requestBody.get("old_password");
-            String newPassword = requestBody.get("new_password");
-            if (oldPassword != null && newPassword != null) {
-                if (!passwordEncoder.matches(oldPassword, member.getPassword())) {
-                    return ResponseEntity.status(401)
-                            .body(Map.of("error", "Old password does not match"));
-                }
-                member.setPassword(passwordEncoder.encode(newPassword));
-            }
-
-            // Update other fields
+            // Update fields
             String userId = requestBody.get("user_id");
             String username = requestBody.get("username");
             String email = requestBody.get("email");
             String role = requestBody.get("role");
+            String password = requestBody.get("password"); // raw password
 
             if (userId != null) member.setUserId(userId.trim());
             if (username != null) member.setUsername(username.trim());
             if (email != null) member.setEmail(email.trim().toLowerCase());
-
-            // Only allow ADMIN/SUPER_ADMIN to change roles
-            if (role != null && (member.getRole() != Member.Role.USER
-                    || hasRole("ADMIN") || hasRole("SUPER_ADMIN"))) {
+            if (role != null && (hasRole("ADMIN") || hasRole("SUPER_ADMIN"))) {
                 member.setRole(Member.Role.valueOf(role.trim()));
+            }
+
+            // Pass raw password to service; do NOT hash here
+            if (password != null && !password.isBlank()) {
+                member.setPassword(password);
             }
 
             Member updatedMember = memberService.updateMember(id, member);
@@ -156,6 +148,8 @@ public class MemberController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
+
+
 
     // Utility method to check role
     private boolean hasRole(String role) {

@@ -2,8 +2,12 @@ package com.simple.pmtool.Service;
 
 import com.simple.pmtool.Model.Member;
 import com.simple.pmtool.Repository.MemberRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -14,22 +18,19 @@ public class MemberService {
     @Autowired
     private MemberRepository memberRepository;
 
+    @Autowired
+    private EntityManager entityManager; // for native queries if needed
+
     // Create with duplicate checks
     public Member createMember(Member member) {
         memberRepository.findByUserId(member.getUserId())
-                .ifPresent(existing -> {
-                    throw new RuntimeException("User ID already exists");
-                });
+                .ifPresent(existing -> { throw new RuntimeException("User ID already exists"); });
 
         memberRepository.findByUsername(member.getUsername())
-                .ifPresent(existing -> {
-                    throw new RuntimeException("Username already exists");
-                });
+                .ifPresent(existing -> { throw new RuntimeException("Username already exists"); });
 
         memberRepository.findByEmail(member.getEmail())
-                .ifPresent(existing -> {
-                    throw new RuntimeException("Email already exists");
-                });
+                .ifPresent(existing -> { throw new RuntimeException("Email already exists"); });
 
         return memberRepository.save(member);
     }
@@ -44,7 +45,7 @@ public class MemberService {
         return memberRepository.findById(id);
     }
 
-    // Update with duplicate checks
+    // Update with duplicate checks and safe password handling
     public Member updateMember(Long id, Member newData) {
         return memberRepository.findById(id).map(member -> {
 
@@ -76,15 +77,33 @@ public class MemberService {
             member.setUserId(newData.getUserId());
             member.setUsername(newData.getUsername());
             member.setEmail(newData.getEmail());
-            member.setPassword(newData.getPassword());
+            member.setRole(newData.getRole());
+
+            // Only hash password once
+            if (newData.getPassword() != null && !newData.getPassword().isBlank()) {
+                BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+                member.setPassword(passwordEncoder.encode(newData.getPassword()));
+            }
 
             return memberRepository.save(member);
         }).orElseThrow(() -> new RuntimeException("Member not found with id " + id));
     }
 
-    // Delete
+
+
+    // Delete with relation cleanup
+    @Transactional
     public boolean deleteMember(Long id) {
         if (memberRepository.existsById(id)) {
+
+            entityManager.createNativeQuery("DELETE FROM project_members WHERE member_id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
+
+            entityManager.createQuery("UPDATE Project p SET p.owner = null WHERE p.owner.id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
+
             memberRepository.deleteById(id);
             return true;
         } else {
@@ -92,9 +111,8 @@ public class MemberService {
         }
     }
 
-    // Add this method
     public Optional<Member> getMemberByUserId(String userId) {
         return memberRepository.findByUserId(userId);
     }
-
 }
+
