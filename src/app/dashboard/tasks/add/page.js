@@ -7,7 +7,6 @@ import TaskForm from "@/components/TaskForm";
 import { createTask } from "@/app/services/taskService";
 import { getProjects } from "@/app/services/projectService";
 
-// Initial form state (static)
 const INITIAL_FORM = {
   project_id: "",
   name: "",

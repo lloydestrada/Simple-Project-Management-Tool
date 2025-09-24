@@ -86,11 +86,7 @@ export default function ViewProjectPage() {
   if (loading) return <p className="text-black">Loading project...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!project) return <p className="text-black">Project not found.</p>;
-
-  // Filter for USER role: show only if user is assigned
-
-
-
+ 
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
